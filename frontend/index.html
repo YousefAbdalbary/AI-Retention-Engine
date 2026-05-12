@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Retention AI Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">RA</div>
+        <div>
+          <strong>Retention AI</strong>
+          <span>Enterprise command center</span>
+        </div>
+      </div>
+
+      <nav class="nav-list" aria-label="Primary">
+        <a class="nav-item active" href="#overview" data-view="overview"><i data-lucide="layout-dashboard"></i><span>Overview</span></a>
+        <a class="nav-item" href="#customers" data-view="customers"><i data-lucide="users"></i><span>All Customers</span></a>
+        <a class="nav-item" href="#analysis" data-view="analysis"><i data-lucide="brain-circuit"></i><span>AI Analysis</span></a>
+        <a class="nav-item" href="#realtime" data-view="realtime"><i data-lucide="activity"></i><span>Realtime</span></a>
+      </nav>
+
+      <div class="sidebar-status">
+        <span class="pulse"></span>
+        <div>
+          <strong id="modelStatus">Model checking</strong>
+          <span>FastAPI + XGBoost</span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Customer Retention Intelligence</p>
+          <h1>AI Risk Operations Dashboard</h1>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-button" id="overviewPdfBtn" type="button" aria-label="Save overview PDF"><i data-lucide="file-down"></i></button>
+          <button class="icon-button" id="refreshBtn" type="button" aria-label="Refresh dashboard"><i data-lucide="refresh-cw"></i></button>
+          <button class="icon-button" id="themeToggle" type="button" aria-label="Toggle theme"><i data-lucide="sun-moon"></i></button>
+        </div>
+      </header>
+
+      <section class="view active" id="overviewView">
+        <div class="kpi-grid" id="kpiGrid">
+          <article class="kpi-card skeleton"></article>
+          <article class="kpi-card skeleton"></article>
+          <article class="kpi-card skeleton"></article>
+          <article class="kpi-card skeleton"></article>
+          <article class="kpi-card skeleton"></article>
+          <article class="kpi-card skeleton"></article>
+          <article class="kpi-card skeleton"></article>
+        </div>
+
+        <div class="panel-grid">
+          <section class="panel chart-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Churn Distribution</h2>
+                <p>Portfolio risk bands by customer count.</p>
+              </div>
+              <span class="badge success">Live</span>
+            </div>
+            <div class="chart-wrap"><canvas id="churnChart"></canvas></div>
+          </section>
+
+          <section class="panel chart-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Monthly Retention Trend</h2>
+                <p>Retention rate, risk, and intervention volume.</p>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+          </section>
+
+          <section class="panel chart-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Revenue Impact</h2>
+                <p>Protected, watchlist, and exposed revenue.</p>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="revenueChart"></canvas></div>
+          </section>
+
+          <section class="panel chart-panel">
+            <div class="panel-header">
+              <div>
+                <h2>AI Action Distribution</h2>
+                <p>Operational mix of retention decisions.</p>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="actionChart"></canvas></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="customersView">
+        <section class="panel table-panel">
+          <div class="panel-header table-tools">
+            <div>
+              <h2>All Customers Analytics</h2>
+              <p>Search, filter, sort, inspect, and remove customers you analyzed or uploaded.</p>
+            </div>
+            <div class="filters">
+              <label class="search-box">
+                <i data-lucide="search"></i>
+                <input id="customerSearch" type="search" placeholder="Search customer or segment" />
+              </label>
+              <select id="riskFilter" aria-label="Risk filter">
+                <option value="all">All risk</option>
+                <option value="critical">Critical</option>
+                <option value="high">High+</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+              <select id="vipFilter" aria-label="VIP filter">
+                <option value="all">All customers</option>
+                <option value="vip">VIP only</option>
+                <option value="standard">Standard only</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th data-sort="customer_id">Customer ID</th>
+                  <th data-sort="risk">Risk %</th>
+                  <th>VIP</th>
+                  <th data-sort="revenue">Revenue</th>
+                  <th data-sort="tenure">Tenure</th>
+                  <th data-sort="cancel_rate">Cancel Rate</th>
+                  <th>Retention Status</th>
+                  <th>AI Decision</th>
+                  <th data-sort="priority_score">Priority</th>
+                  <th data-sort="last_activity">Last Activity</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="customersBody">
+                <tr><td colspan="11"><div class="table-loading">Loading customers...</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="pagination">
+            <span id="paginationText">--</span>
+            <div>
+              <button class="small-button" id="prevPage" type="button"><i data-lucide="chevron-left"></i></button>
+              <button class="small-button" id="nextPage" type="button"><i data-lucide="chevron-right"></i></button>
+            </div>
+          </div>
+        </section>
+
+        <div class="panel-grid compact">
+          <section class="panel chart-panel">
+            <div class="panel-header"><div><h2>Customer Segmentation</h2><p>Count and average risk by segment.</p></div></div>
+            <div class="chart-wrap"><canvas id="segmentChart"></canvas></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><h2>Risk Heatmap</h2><p>Segment-level risk concentration.</p></div></div>
+            <div class="heatmap" id="riskHeatmap"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="analysisView">
+        <div class="analysis-layout">
+          <section class="panel form-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Single Customer Scoring</h2>
+                <p>Run the existing AI prediction flow and generate structured LLM insights.</p>
+              </div>
+              <button class="small-button text" id="fillExampleBtn" type="button">Example</button>
+            </div>
+
+            <form id="predictionForm" class="form-grid">
+              <label><span>Customer ID</span><input id="user_id" type="text" value="VIP-USER-777" required /></label>
+              <label><span>Avg Plan Price</span><input id="avg_plan_price" type="number" value="550" required /></label>
+              <label><span>Total Paid</span><input id="total_amount_paid" type="number" value="550" required /></label>
+              <label><span>Total Transactions</span><input id="total_transactions" type="number" value="2" required /></label>
+              <label><span>Billing Tenure Days</span><input id="billing_tenure_days" type="number" value="40" required /></label>
+              <label><span>Auto-Renew Count</span><input id="auto_renew_count" type="number" value="0" required /></label>
+              <label><span>Cancellations</span><input id="total_cancellations" type="number" value="1" required /></label>
+              <label><span>Cancel Rate</span><input id="cancel_rate" type="number" step="0.01" value="0.5" required /></label>
+              <label class="check-row"><input id="useLlama" type="checkbox" checked /><span>Enhance with Groq LLaMA</span></label>
+              <button id="analyzeBtn" class="primary-button" type="submit"><i data-lucide="sparkles"></i><span>Analyze Customer</span></button>
+            </form>
+
+            <div class="csv-upload">
+              <div>
+                <h3>CSV Batch Analysis</h3>
+                <p>Upload rows with user_id, avg_plan_price, total_amount_paid, total_transactions, billing_tenure_days, auto_renew_count, total_cancellations, cancel_rate.</p>
+              </div>
+              <label class="file-drop">
+                <i data-lucide="upload-cloud"></i>
+                <span id="csvFileLabel">Choose CSV file</span>
+                <input id="csvFileInput" type="file" accept=".csv,text/csv" />
+              </label>
+              <button id="uploadCsvBtn" class="primary-button" type="button"><i data-lucide="file-spreadsheet"></i><span>Analyze CSV</span></button>
+              <div id="csvUploadStatus" class="form-note"></div>
+            </div>
+          </section>
+
+          <section class="panel insights-panel" id="insightsPanel">
+            <div class="empty-state">
+              <i data-lucide="scan-line"></i>
+              <h2>Structured AI Insights</h2>
+              <p>Run a customer analysis to render executive summary, risk score, recommendations, timeline, intervention status, and confidence.</p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="realtimeView">
+        <div class="panel-grid compact">
+          <section class="panel">
+            <div class="panel-header"><div><h2>Realtime Alerts</h2><p>High-risk customers and intervention logs from saved analyses.</p></div><span class="badge success">Saved data</span></div>
+            <div class="alert-list" id="alertList"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><h2>Activity Feed</h2><p>AI interventions and model events.</p></div></div>
+            <div class="activity-feed" id="activityFeed"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><h2>VIP vs Non-VIP</h2><p>Portfolio composition.</p></div></div>
+            <div class="chart-wrap"><canvas id="vipChart"></canvas></div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <aside class="drawer" id="customerDrawer" aria-hidden="true">
+    <div class="drawer-backdrop" id="drawerBackdrop"></div>
+    <section class="drawer-panel">
+      <div class="drawer-header">
+        <div>
+          <p class="eyebrow">Customer Detail</p>
+          <h2 id="drawerTitle">Customer</h2>
+        </div>
+        <button class="icon-button" id="closeDrawer" type="button" aria-label="Close drawer"><i data-lucide="x"></i></button>
+      </div>
+      <div id="drawerContent" class="drawer-content"></div>
+    </section>
+  </aside>
+
+  <div class="toast-stack" id="toastStack"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
