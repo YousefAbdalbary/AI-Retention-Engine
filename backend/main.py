@@ -135,11 +135,21 @@ def load_model() -> xgb.XGBClassifier | None:
     try:
         model_path = resolve_model_path()
         loaded_model = xgb.XGBClassifier()
-        loaded_model.load_model(model_path)
+        path_str = str(model_path)
+        try:
+            loaded_model.load_model(path_str)
+        except Exception:
+            # Fallback for raw booster files or scikit-learn version mismatches
+            booster = xgb.Booster()
+            booster.load_model(path_str)
+            loaded_model._Booster = booster
+            if not hasattr(loaded_model, "_estimator_type"):
+                setattr(loaded_model, "_estimator_type", "classifier")
+
         logger.info("XGBoost model loaded from %s", model_path)
         return loaded_model
     except Exception as exc:
-        logger.exception("Model load failed (will use fallback scoring): %s", exc)
+        logger.warning("Model load failed (will use fallback scoring): %s", exc)
         return None
 
 
@@ -791,28 +801,61 @@ async def analyze_risk(
 
 
 @app.post("/api/v1/customers/upload-csv")
-async def upload_csv_customers(payload: CSVUploadPayload):
+async def upload_csv_customers(payload: CSVUploadPayload, background_tasks: BackgroundTasks):
     reader = csv.DictReader(io.StringIO(payload.csv_text.strip()))
     imported = 0
     errors = []
+    batch_customers_for_email = []
+
+    def safe_float(val: Any, default: float = 0.0) -> float:
+        if val is None or str(val).strip() == "":
+            return default
+        try:
+            return float(str(val).strip())
+        except (ValueError, TypeError):
+            return default
+
+    def safe_int(val: Any, default: int = 0) -> int:
+        if val is None or str(val).strip() == "":
+            return default
+        try:
+            return int(float(str(val).strip()))
+        except (ValueError, TypeError):
+            return default
 
     for row in reader:
+        # Normalize keys: lowercase and strip whitespace
+        normalized_row = {str(k).lower().strip(): v for k, v in row.items()}
+
         try:
+            user_id = str(normalized_row.get("user_id") or normalized_row.get("user id") or f"CSV-{imported+1}").strip()
+
             cust_data = CustomerData(
-                user_id=row.get("user_id", f"CSV-{imported+1}"),
-                avg_plan_price=float(row.get("avg_plan_price", 0)),
-                total_amount_paid=float(row.get("total_amount_paid", 0)),
-                total_transactions=int(row.get("total_transactions", 0)),
-                billing_tenure_days=int(row.get("billing_tenure_days", 0)),
-                auto_renew_count=int(row.get("auto_renew_count", 0)),
-                total_cancellations=int(row.get("total_cancellations", 0)),
-                cancel_rate=float(row.get("cancel_rate", 0)),
+                user_id=user_id,
+                avg_plan_price=safe_float(normalized_row.get("avg_plan_price") or normalized_row.get("avg plan price")),
+                total_amount_paid=safe_float(normalized_row.get("total_amount_paid") or normalized_row.get("total amount paid")),
+                total_transactions=safe_int(normalized_row.get("total_transactions") or normalized_row.get("total transactions")),
+                billing_tenure_days=safe_int(normalized_row.get("billing_tenure_days") or normalized_row.get("billing tenure days")),
+                auto_renew_count=safe_int(normalized_row.get("auto_renew_count") or normalized_row.get("auto renew count")),
+                total_cancellations=safe_int(normalized_row.get("total_cancellations") or normalized_row.get("total cancellations")),
+                cancel_rate=safe_float(normalized_row.get("cancel_rate") or normalized_row.get("cancel rate")),
             )
 
             if model is not None:
-                risk_prob = float(
-                    model.predict_proba(build_feature_frame(cust_data))[:, 1][0]
-                )
+                try:
+                    risk_prob = float(
+                        model.predict_proba(build_feature_frame(cust_data))[:, 1][0]
+                    )
+                except Exception as model_exc:
+                    logger.warning("Model prediction failed for %s, using fallback: %s", user_id, model_exc)
+                    score_input = (
+                        -1.55
+                        + cust_data.cancel_rate * 4.2
+                        + (0.95 if cust_data.auto_renew_count == 0 else -0.35)
+                        + (0.75 if cust_data.billing_tenure_days < 120 else -0.18)
+                        + random.uniform(-0.85, 0.85)
+                    )
+                    risk_prob = sigmoid(score_input)
             else:
                 score_input = (
                     -1.55
@@ -826,13 +869,50 @@ async def upload_csv_customers(payload: CSVUploadPayload):
             risk_percentage = round(risk_prob * 100, 2)
             result = customer_from_prediction(cust_data, risk_percentage)
 
+            # --- Advanced AI Diagnostics (LLaMA integration) ---
+            try:
+                drivers_text = f"- Cancel Rate: {cust_data.cancel_rate}\n- Auto-Renew: {cust_data.auto_renew_count}\n- Tenure: {cust_data.billing_tenure_days} days"
+                if imported > 0:
+                    import time
+                    time.sleep(0.6)
+
+                llama_report = call_llama_api(
+                    user_id=user_id,
+                    risk_pct=risk_percentage,
+                    top_drivers_text=drivers_text,
+                    is_vip=cust_data.avg_plan_price > VIP_PLAN_PRICE,
+                    revenue=cust_data.total_amount_paid,
+                )
+                result["llm_analysis"]["llama_report"] = llama_report
+            except Exception as ai_exc:
+                logger.error("AI diagnostics failed for %s: %s", user_id, ai_exc)
+
             CUSTOMERS.insert(0, result)
             CUSTOMERS_BY_ID[result["customer_id"]] = result
+            batch_customers_for_email.append(result)
             imported += 1
         except Exception as e:
             errors.append(f"Row {imported + 1} error: {e}")
 
     save_customers_to_store()
+
+    # Schedule single background thread loop for batch email dispatch
+    if batch_customers_for_email:
+        def _coordinated_bulk_delivery(targets=batch_customers_for_email):
+            import time
+            for idx, item in enumerate(targets):
+                if idx > 0:
+                    time.sleep(2.5)  # Clean intervals prevent SMTP refusals
+                try:
+                    send_retention_email(
+                        customer_id=item["customer_id"],
+                        risk_pct=item["risk_percentage"],
+                    )
+                except Exception as ex:
+                    logger.warning("Batch email failed for %s: %s", item["customer_id"], ex)
+
+        background_tasks.add_task(_coordinated_bulk_delivery)
+
     return {"imported": imported, "errors": errors}
 
 
