@@ -138,7 +138,14 @@ If you are not using a live CRM sync, you can upload test data via CSV. The engi
 
 ### 1. "Ready" Mode (Pre-calculated Features)
 Use this if you already have a summary of customer behavior.
-**File: `test_ready.csv`**
+
+**Table Representation:**
+| user_id | avg_plan_price | total_amount_paid | total_transactions | billing_tenure_days | auto_renew_count | total_cancellations |
+|---|---|---|---|---|---|---|
+| cust_001 | 499.0 | 1497.0 | 3 | 90 | 2 | 0 |
+| cust_002 | 99.0 | 198.0 | 2 | 30 | 0 | 1 |
+
+**CSV Format:**
 ```csv
 user_id,avg_plan_price,total_amount_paid,total_transactions,billing_tenure_days,auto_renew_count,total_cancellations
 cust_001,499.0,1497.0,3,90,2,0
@@ -146,8 +153,16 @@ cust_002,99.0,198.0,2,30,0,1
 ```
 
 ### 2. "Raw" Mode (Transaction Logs)
-Use this if you have a list of raw payment events. The AI engine will group these by `customer_id` and compute the risk features automatically.
-**File: `test_raw.csv`**
+Use this if you have a list of raw payment events. The engine automatically aggregates these.
+
+**Table Representation:**
+| customer_id | transaction_date | amount | plan_name | is_cancellation | is_auto_renew |
+|---|---|---|---|---|---|
+| user_A | 2024-01-01 | 500 | Premium | 0 | 1 |
+| user_A | 2024-02-01 | 500 | Premium | 0 | 1 |
+| user_B | 2024-01-15 | 100 | Basic | 1 | 0 |
+
+**CSV Format:**
 ```csv
 customer_id,transaction_date,amount,plan_name,is_cancellation,is_auto_renew
 user_A,2024-01-01,500,Premium,0,1
