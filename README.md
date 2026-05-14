@@ -121,11 +121,11 @@ Every customer record analyzed by the model must provide or be reduced to these 
 
 The platform supports two primary ways to feed data into the AI engine.
 
-### 2. Smart CSV Engine (Dual-Mode)
+### 1. Smart CSV Engine (Dual-Mode)
 *   **Formatted Mode**: Upload a CSV where each row is a customer already matching the 7 features.
 *   **Raw Mode (Transaction Logs)**: Upload a list of every payment/event. The engine **automatically performs Feature Engineering** to group, aggregate, and calculate tenure/risk per user.
 
-### 3. One-Click "Fetch & Try"
+### 2 One-Click "Fetch & Try"
 Enter a HubSpot or Stripe ID in the Analysis form and click **Fetch** to pull live metrics instantly, or click **Try** in the connector panel to analyze a random live record.
 
 ---
