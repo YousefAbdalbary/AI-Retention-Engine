@@ -38,10 +38,10 @@ This project is a **full-stack AI retention intelligence platform** that:
 - 🧠 **Deep Analysis**: SHAP + LLaMA structured insights (`/api/v1/analyze-risk-detailed`)
 - 📊 **Enterprise Dashboard**: KPI cards, charts, customer tables, risk heatmaps
 - 🌐 **Bilingual**: Full Arabic + English support across all AI outputs
-- 📈 **3,200 synthetic customers** pre-loaded for demo analytics
-- 📁 **CSV Bulk Upload**: Batch customer analysis
-- 🎯 **Next Best Action (NBA)**: AI-recommended retention offers ranked by effectiveness
-- 📋 **PDF/Print Reports**: Per-customer and overview reports
+- 📁 **Smart CSV Engine**: Dual-mode ingestion (Formatted records vs. Raw transaction logs)
+- 🔌 **CRM Connectors**: Live sync from HubSpot, Stripe, Mixpanel, and Salesforce
+- 🔍 **One-Click Lookup**: "Fetch" and "Try" buttons for instant real-time CRM record analysis
+- 📊 **Batch Summary**: Automatic KPI overviews (Avg Risk, High Risk Count) for all uploads
 - 🌙 **Dark/Light Mode**: Premium theme switching
 
 ---
@@ -97,16 +97,40 @@ The complete training pipeline is in `ai-churn-presiction.ipynb`:
 - Downsampled to **20,000 users** with stratified sampling (preserving churn ratio)
 - Filtered **23,583 transaction records** for sampled users
 
-#### 2. Feature Engineering (RFM Analysis)
-| Feature | Description |
-|---|---|
-| `total_transactions` | Count of payment transactions |
-| `total_cancellations` | Sum of cancellation events |
-| `auto_renew_count` | Count of auto-renewal transactions |
-| `total_amount_paid` | Cumulative revenue |
-| `avg_plan_price` | Average subscription plan price |
-| `billing_tenure_days` | Days between first and last transaction |
-| `cancel_rate` | Cancellation rate = cancellations / transactions |
+#### 2. Detailed Feature Definitions (The 7 Pillars)
+Every customer record analyzed by the model must provide or be reduced to these **7 core features**.
+
+| Feature | Type | Definition | Why it matters |
+|---|---|---|---|
+| `avg_plan_price` | Float | The average cost of the user's subscription plans. | High prices increase churn probability if value perception drops. |
+| `total_amount_paid`| Float | Total cumulative revenue collected from the customer. | Indicates historical loyalty and lifetime value (LTV). |
+| `total_transactions`| Int | Total number of successful payment events. | Frequency of engagement; more transactions usually mean higher stickiness. |
+| `billing_tenure_days`| Int | Days between the first seen transaction and today. | Long-term customers are less likely to churn suddenly (Tenure Effect). |
+| `auto_renew_count` | Int | How many times the subscription successfully auto-renewed. | Strongest indicator of passive loyalty and "set-and-forget" behavior. |
+| `total_cancellations`| Int | Count of manual cancellations or payment failures. | Direct signal of intent to leave or financial friction. |
+| `cancel_rate` | Float | `cancellations / transactions` (Computed automatically). | Normalized risk; high rates flag unstable accounts regardless of size. |
+
+---
+
+## 🔌 Data Ingestion Suite
+
+The platform supports three primary ways to feed data into the AI engine.
+
+### 1. Direct CRM Connectors (Live API)
+Connect your existing stack via `backend/.env`. The system uses an **Adapter Pattern** to normalize disparate data into the 7-feature model.
+*   **HubSpot**: Syncs contacts and properties.
+*   **Stripe**: Syncs customers, invoices, and subscription status.
+*   **Mixpanel**: Pulls behavioral telemetry and cohort data.
+*   **Salesforce**: Enterprise account and opportunity sync.
+
+### 2. Smart CSV Engine (Dual-Mode)
+*   **Formatted Mode**: Upload a CSV where each row is a customer already matching the 7 features.
+*   **Raw Mode (Transaction Logs)**: Upload a list of every payment/event. The engine **automatically performs Feature Engineering** to group, aggregate, and calculate tenure/risk per user.
+
+### 3. One-Click "Fetch & Try"
+Enter a HubSpot or Stripe ID in the Analysis form and click **Fetch** to pull live metrics instantly, or click **Try** in the connector panel to analyze a random live record.
+
+---
 
 #### 3. Model Training
 - **Algorithm**: XGBoost with RandomizedSearchCV hyperparameter optimization
@@ -162,8 +186,7 @@ http://127.0.0.1:8000
   "auto_renew_count": 14,
   "total_amount_paid": 1234.56,
   "avg_plan_price": 799.99,
-  "billing_tenure_days": 210,
-  "cancel_rate": 0.18
+  "billing_tenure_days": 210
 }
 ```
 
@@ -437,8 +460,14 @@ Browsers block cross-origin requests. FastAPI adds CORS headers via `CORSMiddlew
 - Next Best Action recommendation engine
 - Advanced Analysis endpoint separation
 
-### 🔮 Phase 3 (Future)
-- CSV bulk upload improvements
+### ✅ Phase 3 (Complete)
+- **Data Connector Suite**: HubSpot, Stripe, Mixpanel, and Salesforce integration
+- **Smart CSV Engine**: Raw transaction log aggregation and feature engineering
+- **Real-time CRM Lookup**: "Fetch" and "Try" buttons for instant record analysis
+- **Batch KPI Overviews**: Real-time summary of bulk ingestion results
+- **Environment Configuration**: Secure `.env` management for all API keys
+
+### 🔮 Phase 4 (Future)
 - PDF export with charts
 - WebSocket real-time alerts
 - Database integration (PostgreSQL)

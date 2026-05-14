@@ -17,6 +17,10 @@ import xgboost as xgb
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from dotenv import load_dotenv
+
+# Load CRM & API keys from .env file
+load_dotenv()
 
 # pyrefly: ignore [missing-import]
 from pydantic import BaseModel, Field
@@ -35,15 +39,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from services.email_service import send_retention_email, send_bulk_retention_emails
 from services.email_tracker import tracker as email_tracker
 from services.email_templates import generate_email_template
+from services.connectors import registry as connector_registry
 
-# LLM Configuration - Load from .env file
-_env_path = Path(__file__).resolve().parent.parent / ".env"
-if _env_path.exists():
-    for _line in _env_path.read_text().splitlines():
-        _line = _line.strip()
-        if _line and not _line.startswith("#") and "=" in _line:
-            _key, _, _val = _line.partition("=")
-            os.environ.setdefault(_key.strip(), _val.strip())
 
 LLAMA_API_KEY = os.environ.get("LLAMA_API_KEY", "")
 LLAMA_API_URL = os.environ.get(
@@ -88,11 +85,12 @@ class CustomerData(BaseModel):
     billing_tenure_days: int = Field(..., ge=0)
     auto_renew_count: int = Field(..., ge=0)
     total_cancellations: int = Field(..., ge=0)
-    cancel_rate: float = Field(..., ge=0)
+    cancel_rate: float = Field(0.0, ge=0)
 
 
 class CSVUploadPayload(BaseModel):
     csv_text: str
+    mode: str = Field("ready", pattern="^(ready|raw)$")
 
 
 class EmailSendRequest(BaseModel):
@@ -145,6 +143,13 @@ def load_model() -> xgb.XGBClassifier | None:
             loaded_model._Booster = booster
             if not hasattr(loaded_model, "_estimator_type"):
                 setattr(loaded_model, "_estimator_type", "classifier")
+
+        import numpy as np
+
+        if not hasattr(loaded_model, "n_classes_"):
+            setattr(loaded_model, "n_classes_", 2)
+        if not hasattr(loaded_model, "classes_"):
+            setattr(loaded_model, "classes_", np.array([0, 1]))
 
         logger.info("XGBoost model loaded from %s", model_path)
         return loaded_model
@@ -733,6 +738,11 @@ async def analyze_risk(
     use_llm: bool = Query(False),
 ):
     try:
+        customer.cancel_rate = (
+            customer.total_cancellations / customer.total_transactions
+            if customer.total_transactions > 0
+            else 0.0
+        )
         if model is not None:
             risk_prob = float(
                 model.predict_proba(build_feature_frame(customer))[:, 1][0]
@@ -802,90 +812,222 @@ async def analyze_risk(
 
 @app.post("/api/v1/customers/upload-csv")
 async def upload_csv_customers(payload: CSVUploadPayload, background_tasks: BackgroundTasks):
+    from fastapi.responses import JSONResponse
+    
+    if payload.mode == "raw":
+        raw_rows = []
+        skipped_rows = 0
+        reader = csv.DictReader(io.StringIO(payload.csv_text.strip()))
+        
+        fieldnames = [str(f).lower().strip() for f in reader.fieldnames or []]
+        raw_req = ["customer_id", "transaction_date", "amount", "plan_name"]
+        missing_raw = [req for req in raw_req if req not in fieldnames]
+        if missing_raw:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "error": "missing_columns",
+                    "missing": missing_raw,
+                    "required": raw_req,
+                    "hint": "Raw transaction mode requires customer_id, transaction_date, amount, plan_name."
+                }
+            )
+
+        for row_idx, row in enumerate(reader):
+            clean_row = {str(k).lower().strip(): v for k, v in row.items()}
+            cid = clean_row.get("customer_id", "").strip()
+            tdate = clean_row.get("transaction_date", "").strip()
+            amt_str = clean_row.get("amount", "").strip()
+            
+            if not cid or not tdate or not amt_str:
+                logger.warning("Skipping raw row %d: missing required field", row_idx + 1)
+                skipped_rows += 1
+                continue
+            
+            try:
+                amt = float(amt_str)
+                if amt < 0:
+                    logger.warning("Skipping raw row %d: negative amount", row_idx + 1)
+                    skipped_rows += 1
+                    continue
+            except ValueError:
+                logger.warning("Skipping raw row %d: non-numeric amount", row_idx + 1)
+                skipped_rows += 1
+                continue
+
+            canc_val = 1 if str(clean_row.get("is_cancellation", "")).strip() == "1" else 0
+            renew_val = 1 if str(clean_row.get("is_auto_renew", "")).strip() == "1" else 0
+
+            raw_rows.append({
+                "customer_id": cid,
+                "transaction_date": tdate,
+                "amount": amt,
+                "plan_name": clean_row.get("plan_name", "").strip(),
+                "is_cancellation": canc_val,
+                "is_auto_renew": renew_val,
+            })
+
+        if not raw_rows:
+            return {
+                "mode": "raw",
+                "rows_received": skipped_rows,
+                "customers_engineered": 0,
+                "customers_scored": 0,
+                "skipped_rows": skipped_rows,
+                "feature_engineering_summary": {
+                    "avg_transactions_per_customer": 0,
+                    "avg_tenure_days": 0,
+                    "avg_cancel_rate": 0
+                },
+                "results": []
+            }
+
+        df = pd.DataFrame(raw_rows)
+        df["transaction_date"] = pd.to_datetime(df["transaction_date"], errors="coerce")
+        bad_dates = df["transaction_date"].isna().sum()
+        if bad_dates > 0:
+            skipped_rows += int(bad_dates)
+            df = df.dropna(subset=["transaction_date"])
+
+        results = []
+        tot_tx = []
+        tot_tenure = []
+        tot_canc_rate = []
+
+        for cid, group in df.groupby("customer_id"):
+            if len(group) == 0:
+                continue
+            group = group.sort_values("transaction_date")
+            first_date = group["transaction_date"].iloc[0]
+            last_date = group["transaction_date"].iloc[-1]
+
+            tx_count = len(group)
+            canc_count = int(group["is_cancellation"].sum())
+            renew_count = int(group["is_auto_renew"].sum())
+            amt_sum = float(group["amount"].sum())
+            amt_mean = float(group["amount"].mean())
+            tenure_days = max(1, (last_date - first_date).days)
+            if tx_count == 1:
+                tenure_days = 1
+            
+            c_rate = round(canc_count / max(1, tx_count), 4)
+
+            eng_features = {
+                "user_id": str(cid),
+                "avg_plan_price": round(amt_mean, 2),
+                "total_amount_paid": round(amt_sum, 2),
+                "total_transactions": tx_count,
+                "billing_tenure_days": tenure_days,
+                "auto_renew_count": renew_count,
+                "total_cancellations": canc_count,
+                "cancel_rate": c_rate,
+            }
+
+            tot_tx.append(tx_count)
+            tot_tenure.append(tenure_days)
+            tot_canc_rate.append(c_rate)
+
+            try:
+                cust_dict = _score_and_store_customer(eng_features)
+                if cust_dict["customer_id"] in CUSTOMERS_BY_ID:
+                    CUSTOMERS[:] = [c for c in CUSTOMERS if c["customer_id"] != cust_dict["customer_id"]]
+                CUSTOMERS.insert(0, cust_dict)
+                CUSTOMERS_BY_ID[cust_dict["customer_id"]] = cust_dict
+                results.append(cust_dict)
+            except Exception as ex:
+                logger.warning("Failed to score raw engineered customer %s: %s", cid, ex)
+
+        _persist_customers()
+
+        summary_stats = {
+            "avg_transactions_per_customer": round(sum(tot_tx) / len(tot_tx), 1) if tot_tx else 0,
+            "avg_tenure_days": int(sum(tot_tenure) / len(tot_tenure)) if tot_tenure else 0,
+            "avg_cancel_rate": round(sum(tot_canc_rate) / len(tot_canc_rate), 2) if tot_canc_rate else 0,
+        }
+
+        return {
+            "mode": "raw",
+            "rows_received": len(raw_rows) + skipped_rows,
+            "customers_engineered": len(results),
+            "customers_scored": len(results),
+            "skipped_rows": skipped_rows,
+            "feature_engineering_summary": summary_stats,
+            "results": results
+        }
+
+    # Default Mode: "ready"
     reader = csv.DictReader(io.StringIO(payload.csv_text.strip()))
+    fieldnames = [str(f).lower().strip() for f in reader.fieldnames or []]
+    
+    mapped_fields = set()
+    for f in fieldnames:
+        if f in ("user_id", "user id"): mapped_fields.add("user_id")
+        elif f in ("avg_plan_price", "avg plan price"): mapped_fields.add("avg_plan_price")
+        elif f in ("total_amount_paid", "total amount paid"): mapped_fields.add("total_amount_paid")
+        elif f in ("total_transactions", "total transactions"): mapped_fields.add("total_transactions")
+        elif f in ("billing_tenure_days", "billing tenure days"): mapped_fields.add("billing_tenure_days")
+        elif f in ("auto_renew_count", "auto renew count"): mapped_fields.add("auto_renew_count")
+        elif f in ("total_cancellations", "total cancellations"): mapped_fields.add("total_cancellations")
+
+    required = ["user_id", "avg_plan_price", "total_amount_paid", "total_transactions", "billing_tenure_days", "auto_renew_count", "total_cancellations"]
+    missing = [req for req in required if req not in mapped_fields]
+    if missing:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": "missing_columns",
+                "missing": missing,
+                "required": required,
+                "hint": "Use mode='raw' if you have raw transaction data."
+            }
+        )
+
     imported = 0
     errors = []
     batch_customers_for_email = []
 
     def safe_float(val: Any, default: float = 0.0) -> float:
-        if val is None or str(val).strip() == "":
-            return default
-        try:
-            return float(str(val).strip())
-        except (ValueError, TypeError):
-            return default
+        if val is None or str(val).strip() == "": return default
+        try: return float(str(val).strip())
+        except (ValueError, TypeError): return default
 
     def safe_int(val: Any, default: int = 0) -> int:
-        if val is None or str(val).strip() == "":
-            return default
-        try:
-            return int(float(str(val).strip()))
-        except (ValueError, TypeError):
-            return default
+        if val is None or str(val).strip() == "": return default
+        try: return int(float(str(val).strip()))
+        except (ValueError, TypeError): return default
 
     for row in reader:
-        # Normalize keys: lowercase and strip whitespace
         normalized_row = {str(k).lower().strip(): v for k, v in row.items()}
-
         try:
             user_id = str(normalized_row.get("user_id") or normalized_row.get("user id") or f"CSV-{imported+1}").strip()
+            tx = safe_int(normalized_row.get("total_transactions") or normalized_row.get("total transactions"))
+            canc = safe_int(normalized_row.get("total_cancellations") or normalized_row.get("total cancellations"))
+            calc_cancel_rate = canc / tx if tx > 0 else 0.0
 
             cust_data = CustomerData(
                 user_id=user_id,
                 avg_plan_price=safe_float(normalized_row.get("avg_plan_price") or normalized_row.get("avg plan price")),
                 total_amount_paid=safe_float(normalized_row.get("total_amount_paid") or normalized_row.get("total amount paid")),
-                total_transactions=safe_int(normalized_row.get("total_transactions") or normalized_row.get("total transactions")),
+                total_transactions=tx,
                 billing_tenure_days=safe_int(normalized_row.get("billing_tenure_days") or normalized_row.get("billing tenure days")),
                 auto_renew_count=safe_int(normalized_row.get("auto_renew_count") or normalized_row.get("auto renew count")),
-                total_cancellations=safe_int(normalized_row.get("total_cancellations") or normalized_row.get("total cancellations")),
-                cancel_rate=safe_float(normalized_row.get("cancel_rate") or normalized_row.get("cancel rate")),
+                total_cancellations=canc,
+                cancel_rate=calc_cancel_rate,
             )
 
             if model is not None:
                 try:
-                    risk_prob = float(
-                        model.predict_proba(build_feature_frame(cust_data))[:, 1][0]
-                    )
+                    risk_prob = float(model.predict_proba(build_feature_frame(cust_data))[:, 1][0])
                 except Exception as model_exc:
                     logger.warning("Model prediction failed for %s, using fallback: %s", user_id, model_exc)
-                    score_input = (
-                        -1.55
-                        + cust_data.cancel_rate * 4.2
-                        + (0.95 if cust_data.auto_renew_count == 0 else -0.35)
-                        + (0.75 if cust_data.billing_tenure_days < 120 else -0.18)
-                        + random.uniform(-0.85, 0.85)
-                    )
+                    score_input = -1.55 + cust_data.cancel_rate * 4.2 + (0.95 if cust_data.auto_renew_count == 0 else -0.35) + (0.75 if cust_data.billing_tenure_days < 120 else -0.18) + random.uniform(-0.85, 0.85)
                     risk_prob = sigmoid(score_input)
             else:
-                score_input = (
-                    -1.55
-                    + cust_data.cancel_rate * 4.2
-                    + (0.95 if cust_data.auto_renew_count == 0 else -0.35)
-                    + (0.75 if cust_data.billing_tenure_days < 120 else -0.18)
-                    + random.uniform(-0.85, 0.85)
-                )
+                score_input = -1.55 + cust_data.cancel_rate * 4.2 + (0.95 if cust_data.auto_renew_count == 0 else -0.35) + (0.75 if cust_data.billing_tenure_days < 120 else -0.18) + random.uniform(-0.85, 0.85)
                 risk_prob = sigmoid(score_input)
 
             risk_percentage = round(risk_prob * 100, 2)
             result = customer_from_prediction(cust_data, risk_percentage)
-
-            # --- Advanced AI Diagnostics (LLaMA integration) ---
-            try:
-                drivers_text = f"- Cancel Rate: {cust_data.cancel_rate}\n- Auto-Renew: {cust_data.auto_renew_count}\n- Tenure: {cust_data.billing_tenure_days} days"
-                if imported > 0:
-                    import time
-                    time.sleep(0.6)
-
-                llama_report = call_llama_api(
-                    user_id=user_id,
-                    risk_pct=risk_percentage,
-                    top_drivers_text=drivers_text,
-                    is_vip=cust_data.avg_plan_price > VIP_PLAN_PRICE,
-                    revenue=cust_data.total_amount_paid,
-                )
-                result["llm_analysis"]["llama_report"] = llama_report
-            except Exception as ai_exc:
-                logger.error("AI diagnostics failed for %s: %s", user_id, ai_exc)
 
             CUSTOMERS.insert(0, result)
             CUSTOMERS_BY_ID[result["customer_id"]] = result
@@ -896,24 +1038,24 @@ async def upload_csv_customers(payload: CSVUploadPayload, background_tasks: Back
 
     save_customers_to_store()
 
-    # Schedule single background thread loop for batch email dispatch
     if batch_customers_for_email:
         def _coordinated_bulk_delivery(targets=batch_customers_for_email):
             import time
             for idx, item in enumerate(targets):
-                if idx > 0:
-                    time.sleep(2.5)  # Clean intervals prevent SMTP refusals
+                if idx > 0: time.sleep(2.5)
                 try:
-                    send_retention_email(
-                        customer_id=item["customer_id"],
-                        risk_pct=item["risk_percentage"],
-                    )
+                    send_retention_email(customer_id=item["customer_id"], risk_pct=item["risk_percentage"])
                 except Exception as ex:
                     logger.warning("Batch email failed for %s: %s", item["customer_id"], ex)
 
         background_tasks.add_task(_coordinated_bulk_delivery)
 
-    return {"imported": imported, "errors": errors}
+    return {
+        "imported": imported,
+        "errors": errors,
+        "customers_scored": imported,
+        "results": batch_customers_for_email
+    }
 
 
 @app.delete("/api/v1/customer/{customer_id}")
@@ -1429,6 +1571,11 @@ def _llama_fallback(user_id: str, risk_pct: float, is_vip: bool) -> dict[str, An
 async def analyze_risk_detailed(customer: CustomerData, background_tasks: BackgroundTasks):
     """Advanced analysis: XGBoost + SHAP + Groq LLaMA structured insights."""
     try:
+        customer.cancel_rate = (
+            customer.total_cancellations / customer.total_transactions
+            if customer.total_transactions > 0
+            else 0.0
+        )
         # 1. XGBoost prediction
         if model is not None:
             feature_df = build_feature_frame(customer)
@@ -1734,6 +1881,167 @@ async def preview_email_template(
     )
     from fastapi.responses import HTMLResponse
     return HTMLResponse(content=html)
+
+
+# ---------------------------------------------------------------------------
+# CONNECTORS ENGINE
+# ---------------------------------------------------------------------------
+
+_persist_customers = save_customers_to_store
+
+
+def run_prediction(features: pd.DataFrame, data: CustomerData) -> tuple[float, str, str, bool]:
+    if model is not None:
+        try:
+            risk_prob = float(model.predict_proba(features)[:, 1][0])
+        except Exception as exc:
+            logger.warning("Model prediction failed in sync: %s", exc)
+            score_input = (
+                -1.55
+                + data.cancel_rate * 4.2
+                + (0.95 if data.auto_renew_count == 0 else -0.35)
+                + (0.75 if data.billing_tenure_days < 120 else -0.18)
+                + random.uniform(-0.85, 0.85)
+            )
+            risk_prob = sigmoid(score_input)
+    else:
+        score_input = (
+            -1.55
+            + data.cancel_rate * 4.2
+            + (0.95 if data.auto_renew_count == 0 else -0.35)
+            + (0.75 if data.billing_tenure_days < 120 else -0.18)
+            + random.uniform(-0.85, 0.85)
+        )
+        risk_prob = sigmoid(score_input)
+
+    risk_pct = round(risk_prob * 100, 2)
+    is_vip = data.avg_plan_price > VIP_PLAN_PRICE
+    priority = priority_from_score(risk_pct, is_vip)
+    decision = decision_from_priority(priority, is_vip)
+    return risk_pct, priority, decision, is_vip
+
+
+def build_customer_record(data: CustomerData, risk_pct: float, priority: str, decision: str, is_vip: bool) -> dict[str, Any]:
+    return customer_from_prediction(data, risk_pct)
+
+
+def _score_and_store_customer(raw: dict) -> dict:
+    METADATA_KEYS = {
+        '_connector_source', '_synced_at', 'email', 'company',
+        'lifecycle_stage', 'account_name', 'mixpanel_id', 'country',
+        'total_sessions', 'stripe_customer_id', 'stripe_sub_id',
+        'status', 'currency', '_mock_note'
+    }
+    clean = {k: v for k, v in raw.items() if k not in METADATA_KEYS}
+
+    tc = int(clean.get('total_cancellations', 0))
+    tt = max(1, int(clean.get('total_transactions', 1)))
+    clean['cancel_rate'] = round(tc / tt, 4)
+
+    data = CustomerData(**clean)
+    features = build_feature_frame(data)
+    risk_pct, priority, decision, is_vip = run_prediction(features, data)
+    customer = build_customer_record(data, risk_pct, priority, decision, is_vip)
+    customer['_connector_source'] = raw.get('_connector_source', 'unknown')
+    customer['_synced_at'] = raw.get('_synced_at', now_iso())
+    return customer
+
+
+@app.get("/api/v1/connectors/status")
+async def get_connectors_status():
+    return {
+        "connectors": connector_registry.status(),
+        "checked_at": now_iso(),
+    }
+
+
+@app.get("/api/v1/connectors/lookup/{customer_id}")
+async def lookup_connector_customer(customer_id: str):
+    res = connector_registry.lookup_customer(customer_id)
+    if not res:
+        raise HTTPException(status_code=404, detail=f"Customer '{customer_id}' not found in any active connectors.")
+    return res
+
+
+@app.post("/api/v1/connectors/sync-all")
+async def sync_all_connectors(limit_per_source: int = Query(25), score: bool = Query(True)):
+    merged = connector_registry.sync_all(limit_per_source=limit_per_source)
+    scored_count = 0
+    skipped = 0
+
+    results_list = []
+
+    if score:
+        for raw_dict in merged["customers"]:
+            try:
+                cust = _score_and_store_customer(raw_dict)
+                if cust["customer_id"] in CUSTOMERS_BY_ID:
+                    CUSTOMERS[:] = [c for c in CUSTOMERS if c["customer_id"] != cust["customer_id"]]
+                CUSTOMERS.insert(0, cust)
+                CUSTOMERS_BY_ID[cust["customer_id"]] = cust
+                results_list.append(cust)
+                scored_count += 1
+            except Exception as ex:
+                logger.warning("Failed to score synced customer: %s", ex)
+                skipped += 1
+    else:
+        for raw_dict in merged["customers"]:
+            results_list.append({"customer_id": raw_dict.get("user_id"), "connector_source": raw_dict.get("_connector_source")})
+
+    _persist_customers()
+
+
+    return {
+        "total_fetched": merged["total_fetched"],
+        "total_synced": merged["total_fetched"],
+        "scored_count": scored_count,
+        "skipped": skipped,
+        "sources_summary": merged["sources_summary"],
+        "synced_at": merged["synced_at"],
+        "results": results_list
+    }
+
+
+@app.post("/api/v1/connectors/{source}/sync")
+async def sync_one_connector(source: str, limit: int = Query(50), score: bool = Query(True)):
+    if source not in connector_registry.connectors:
+        raise HTTPException(status_code=400, detail=f"Unknown source '{source}'")
+
+    res = connector_registry.sync_one(source, limit=limit)
+    scored_count = 0
+
+    results_list = []
+
+    if score:
+        for raw_dict in res.customers:
+            try:
+                cust = _score_and_store_customer(raw_dict)
+                if cust["customer_id"] in CUSTOMERS_BY_ID:
+                    CUSTOMERS[:] = [c for c in CUSTOMERS if c["customer_id"] != cust["customer_id"]]
+                CUSTOMERS.insert(0, cust)
+                CUSTOMERS_BY_ID[cust["customer_id"]] = cust
+                results_list.append(cust)
+                scored_count += 1
+            except Exception as ex:
+                logger.warning("Failed to score synced customer: %s", ex)
+    else:
+        # Return raw records if scoring is skipped (useful for 'Try' lookup)
+        for raw_dict in res.customers:
+            results_list.append({"customer_id": raw_dict.get("user_id"), "connector_source": source})
+
+    _persist_customers()
+
+
+    return {
+        "source": source,
+        "mode": res.mode,
+        "total_fetched": res.total,
+        "total_synced": res.total,
+        "scored_count": scored_count,
+        "errors": res.errors,
+        "synced_at": res.synced_at,
+        "results": results_list
+    }
 
 
 # ---------------------------------------------------------------------------

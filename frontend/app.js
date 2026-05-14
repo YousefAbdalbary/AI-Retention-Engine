@@ -442,14 +442,13 @@ function renderInsights(analysis, meta = {}) {
 
 function readPredictionPayload() {
   return {
-    user_id: $("user_id").value.trim(),
-    avg_plan_price: Number($("avg_plan_price").value),
-    total_amount_paid: Number($("total_amount_paid").value),
-    total_transactions: Number($("total_transactions").value),
-    billing_tenure_days: Number($("billing_tenure_days").value),
-    auto_renew_count: Number($("auto_renew_count").value),
-    total_cancellations: Number($("total_cancellations").value),
-    cancel_rate: Number($("cancel_rate").value),
+    user_id: ($("user_id")?.value || "").trim(),
+    avg_plan_price: Number($("avg_plan_price")?.value || 0),
+    total_amount_paid: Number($("total_amount_paid")?.value || 0),
+    total_transactions: Number($("total_transactions")?.value || 0),
+    billing_tenure_days: Number($("billing_tenure_days")?.value || 0),
+    auto_renew_count: Number($("auto_renew_count")?.value || 0),
+    total_cancellations: Number($("total_cancellations")?.value || 0),
   };
 }
 
@@ -795,11 +794,39 @@ function bindEvents() {
   });
 
   $("predictionForm").addEventListener("submit", analyzeCustomer);
-  $("uploadCsvBtn").addEventListener("click", uploadCsvCustomers);
-  $("csvFileInput").addEventListener("change", (event) => {
-    const file = event.target.files[0];
-    $("csvFileLabel").textContent = file ? file.name : "Choose CSV file";
+
+  // Smart CSV Drag & Drop Support
+  ['ready', 'raw'].forEach(mode => {
+    const dropzone = $(`dropzone-${mode}`);
+    if (!dropzone) return;
+
+    ['dragover', 'dragleave', 'drop'].forEach(evt => {
+      dropzone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    });
+
+    dropzone.addEventListener('dragover', () => dropzone.style.borderColor = 'var(--brand)');
+    dropzone.addEventListener('dragleave', () => dropzone.style.borderColor = '');
+    dropzone.addEventListener('drop', (e) => {
+      dropzone.style.borderColor = '';
+      const file = e.dataTransfer.files[0];
+      if (file && file.name.endsWith('.csv')) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          csvFiles[mode] = evt.target.result;
+          toast(`File "${file.name}" ready for ${mode} mode`);
+          const span = dropzone.querySelector('span');
+          if (span) span.textContent = `✓ ${file.name}`;
+        };
+        reader.readAsText(file);
+      } else {
+        toast("Please drop a valid .csv file");
+      }
+    });
   });
+
   $("fillExampleBtn").addEventListener("click", () => {
     $("user_id").value = "VIP-USER-777";
     $("avg_plan_price").value = 1200;
@@ -808,7 +835,6 @@ function bindEvents() {
     $("billing_tenure_days").value = 95;
     $("auto_renew_count").value = 0;
     $("total_cancellations").value = 3;
-    $("cancel_rate").value = 0.42;
   });
 
   $("customerSearch").addEventListener("input", (event) => {
@@ -868,11 +894,335 @@ function bindEvents() {
   $("drawerBackdrop").addEventListener("click", closeDrawer);
 }
 
+// ============================================================================
+// CONNECTORS & SMART CSV BATCH UPLOAD ENGINE
+// ============================================================================
+
+function capitalize(str) {
+  if (!str) return "";
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Tab switching
+function switchCsvTab(tab) {
+  document.querySelectorAll('.csv-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.csv-tab-content').forEach(t => t.style.display = 'none');
+  const targetBtn = document.querySelector(`[data-tab="${tab}"]`);
+  if (targetBtn) targetBtn.classList.add('active');
+  const targetTab = document.getElementById(`tab-${tab}`);
+  if (targetTab) targetTab.style.display = 'block';
+}
+
+// Store file content per mode
+const csvFiles = { ready: null, raw: null };
+
+function handleCsvFile(event, mode) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { 
+    csvFiles[mode] = e.target.result; 
+    const dropzone = $(`dropzone-${mode}`);
+    if (dropzone) {
+      const span = dropzone.querySelector('span');
+      if (span) span.textContent = `✓ ${file.name}`;
+    }
+  };
+  reader.readAsText(file);
+  toast(`File selected for ${mode} mode`);
+}
+
+// Template downloads
+function downloadTemplate(mode) {
+  const templates = {
+    ready: `user_id,avg_plan_price,total_amount_paid,total_transactions,billing_tenure_days,auto_renew_count,total_cancellations
+cust_001,199.99,2399.88,12,365,10,1
+cust_002,49.99,149.97,3,45,0,2
+cust_003,999.99,11999.88,12,540,11,0`,
+
+    raw: `customer_id,transaction_date,amount,plan_name,is_cancellation,is_auto_renew
+cust_001,2023-01-15,199.99,Pro,0,1
+cust_001,2023-02-15,199.99,Pro,0,1
+cust_001,2023-03-15,199.99,Pro,0,0
+cust_002,2024-01-10,49.99,Starter,0,1
+cust_002,2024-02-10,49.99,Starter,1,0
+cust_002,2024-03-01,49.99,Starter,0,0`
+  };
+  const blob = new Blob([templates[mode]], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = mode === 'ready' ? 'retention_template_formatted.csv' : 'retention_template_raw.csv';
+  a.click();
+  toast(`Downloaded template (${mode})`);
+}
+
+function showCsvLoading(msg) {
+  const status = document.getElementById("csvUploadStatus");
+  if (status) status.innerHTML = `<span style="color:var(--brand)">⟳ ${msg}</span>`;
+  toast(msg);
+}
+
+function showCsvError(err, hint = "") {
+  const status = document.getElementById("csvUploadStatus");
+  if (status) status.innerHTML = `<span style="color:var(--danger)">✗ ${err}${hint ? `<br><small style="color:var(--warning)">Hint: ${hint}</small>` : ""}</span>`;
+  toast("CSV upload error");
+}
+
+function showCsvSuccess(msg) {
+  const status = document.getElementById("csvUploadStatus");
+  if (status) status.innerHTML = `<span style="color:var(--success)">${msg}</span>`;
+  toast(msg);
+  if (typeof loadCustomers === 'function') loadCustomers();
+  Promise.all([loadOverview(), loadRealtime()]).catch(console.error);
+}
+
+// Upload and score
+async function uploadCsv(mode) {
+  const csvText = csvFiles[mode];
+  if (!csvText) { alert('Please select a CSV file first.'); return; }
+
+  const loadingMsg = mode === 'raw'
+    ? 'Engineering features from transactions...'
+    : 'Scoring customers...';
+  showCsvLoading(loadingMsg);
+
+  try {
+    const res = await fetch('/api/v1/customers/upload-csv', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ csv_text: csvText, mode })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      if (data.error === 'missing_columns') {
+        showCsvError(`Missing columns: ${data.missing.join(', ')}`, data.hint);
+      } else {
+        showCsvError(data.detail || 'Upload failed');
+      }
+      return;
+    }
+
+    renderCsvResults(data, mode);
+    renderBatchOverview(data, `CSV ${capitalize(mode)} Batch Results`);
+  } catch (err) {
+    showCsvError('Network error: ' + err.message);
+  }
+}
+
+function renderBatchOverview(data, title = "Batch Analysis Summary") {
+  const results = data.results || [];
+  if (!results.length) return;
+
+  const total = results.length;
+  const avgRisk = results.reduce((acc, c) => acc + c.risk_percentage, 0) / total;
+  const highRiskCount = results.filter(c => c.priority === 'HIGH' || c.priority === 'CRITICAL').length;
+  const avgTenure = results.reduce((acc, c) => acc + c.billing_tenure_days, 0) / total;
+
+  // Get top 3 riskiest
+  const riskiest = [...results].sort((a, b) => b.risk_percentage - a.risk_percentage).slice(0, 3);
+
+  const html = `
+    <div class="batch-summary">
+      <header class="panel-header" style="margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
+        <div>
+          <h2 style="color: var(--brand)">${title}</h2>
+          <p>Results from your most recent test (${total} records)</p>
+        </div>
+        <span class="badge success">Latest Run</span>
+      </header>
+
+      <div class="kpi-grid" style="grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px;">
+        <div class="mini-card" style="padding: 12px;">
+          <span style="font-size: 10px; color: var(--muted); text-transform: uppercase;">Avg. Risk Score</span>
+          <strong style="display: block; margin-top: 4px; font-size: 20px; color: ${avgRisk > 50 ? 'var(--danger)' : 'var(--success)'}">${avgRisk.toFixed(1)}%</strong>
+        </div>
+        <div class="mini-card" style="padding: 12px;">
+          <span style="font-size: 10px; color: var(--muted); text-transform: uppercase;">High Risk Assets</span>
+          <strong style="display: block; margin-top: 4px; font-size: 20px; color: var(--danger)">${highRiskCount}</strong>
+        </div>
+        <div class="mini-card" style="padding: 12px;">
+          <span style="font-size: 10px; color: var(--muted); text-transform: uppercase;">Avg. Tenure</span>
+          <strong style="display: block; margin-top: 4px; font-size: 20px;">${Math.round(avgTenure)} Days</strong>
+        </div>
+        <div class="mini-card" style="padding: 12px;">
+          <span style="font-size: 10px; color: var(--muted); text-transform: uppercase;">Total Records</span>
+          <strong style="display: block; margin-top: 4px; font-size: 20px;">${total}</strong>
+        </div>
+      </div>
+
+      <h3 style="font-size: 13px; margin-bottom: 12px; color: var(--muted); text-transform: uppercase;">Top 3 Riskiest Customers</h3>
+      <div class="table-wrap" style="min-width: 0; border-radius: 8px; border-color: rgba(148, 163, 184, 0.1);">
+        <table style="min-width: 0;">
+          <thead style="background: rgba(148, 163, 184, 0.05);">
+            <tr><th style="font-size: 10px; padding: 8px;">ID</th><th style="font-size: 10px; padding: 8px;">Risk</th><th style="font-size: 10px; padding: 8px;">Src</th><th style="font-size: 10px; padding: 8px;">Action</th></tr>
+          </thead>
+          <tbody>
+            ${riskiest.map(c => `
+              <tr>
+                <td style="padding: 8px; font-size: 12px;"><strong>${c.customer_id.substring(0, 14)}${c.customer_id.length > 14 ? '..' : ''}</strong></td>
+                <td style="padding: 8px;"><span class="badge ${riskClass(c.priority, c.risk_percentage)}" style="font-size: 10px; min-height: 20px; padding: 0 6px;">${c.risk_percentage}%</span></td>
+                <td style="padding: 8px;"><small style="font-size: 10px; color: var(--muted);">${c.connector_source || 'CSV'}</small></td>
+                <td style="padding: 8px;"><button class="small-button text" onclick="loadIntoForm('${c.customer_id}')" style="font-size: 10px; height: 22px; padding: 0 6px;">Try</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      
+      <div style="margin-top: 16px; text-align: center;">
+        <p class="form-note" style="font-size: 11px;">View full list in the Consumers Dashboard table.</p>
+      </div>
+    </div>
+  `;
+
+  const insightsPanel = document.getElementById('insightsPanel');
+  if (insightsPanel) {
+    insightsPanel.innerHTML = html;
+    insightsPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function renderCsvResults(data, mode) {
+  const count = data.customers_scored || data.results?.length || 0;
+  const engineered = mode === 'raw' ? ` (engineered from ${data.rows_received} rows)` : '';
+  showCsvSuccess(`✓ ${count} customers scored${engineered}`);
+  if (typeof loadCustomers === 'function') loadCustomers();
+}
+
+// Connectors sync panel handlers
+async function loadConnectorStatus() {
+  try {
+    const res = await fetch('/api/v1/connectors/status');
+    const data = await res.json();
+    renderConnectorPanel(data.connectors);
+  } catch (err) {
+    console.error("Failed to load connector statuses", err);
+  }
+}
+
+function renderConnectorPanel(connectors) {
+  const panel = document.getElementById('connector-panel');
+  if (!panel) return;
+  const icons = { hubspot: '🟠', salesforce: '🔵', mixpanel: '🟣', stripe: '💳' };
+  panel.innerHTML = Object.entries(connectors).map(([name, info]) => `
+    <div class="connector-row">
+      <div class="connector-info" style="display: flex; flex-direction: column; gap: 4px;">
+        <span class="connector-name">${icons[name] || '🔌'} ${capitalize(name)}</span>
+        <span class="connector-badge ${info.mode === 'live' ? 'badge-live' : 'badge-mock'}">
+          ${info.mode === 'live' ? '● LIVE' : '● MOCK'}
+        </span>
+      </div>
+      <div class="connector-actions" style="display: flex; gap: 8px;">
+        <button class="small-button text" onclick="testConnector('${name}')" title="Test Connection" type="button">Test</button>
+        <button class="small-button text" onclick="tryFirstRecord('${name}')" title="Try a real record" type="button" style="color: var(--brand);">Try</button>
+        <button class="small-button text" onclick="syncConnector('${name}')" type="button">Sync →</button>
+      </div>
+    </div>
+  `).join('') + `
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line);">
+      <button class="primary-button" onclick="syncAllConnectors()" type="button" style="padding: 0 16px; min-height: 40px; flex: 1;">⟳ Sync All Sources</button>
+      <span id="sync-last-time" class="form-note" style="margin-left: 12px;"></span>
+    </div>
+  `;
+}
+
+async function testConnector(source) {
+  toast(`Testing ${source} connection...`);
+  try {
+    // Call sync with limit=1 and score=false to just test the pipe
+    const res = await fetch(`/api/v1/connectors/${source}/sync?limit=1&score=false`, { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) {
+      toast(`✓ ${capitalize(source)} is ${data.mode}. Found ${data.total_fetched} records.`);
+    } else {
+      toast(`✗ ${capitalize(source)} test failed: ${data.detail || 'Connection error'}`);
+    }
+  } catch (err) {
+    toast(`Network error testing ${source}`);
+  }
+}
+
+async function loadIntoForm(customerId) {
+  $("user_id").value = customerId;
+  setView('analysis');
+  await fetchFromCrm();
+}
+
+async function tryFirstRecord(source) {
+  toast(`Finding a record in ${source}...`);
+  try {
+    const res = await fetch(`/api/v1/connectors/${source}/sync?limit=1&score=false`, { method: 'POST' });
+    const data = await res.json();
+    if (res.ok && data.results && data.results.length > 0) {
+      const firstId = data.results[0].customer_id;
+      await loadIntoForm(firstId);
+    } else {
+      toast(`No records found in ${source}`);
+    }
+  } catch (err) {
+    toast(`Error trying ${source}`);
+  }
+}
+
+async function syncConnector(source) {
+  toast(`Syncing ${source}...`);
+  try {
+    const res = await fetch(`/api/v1/connectors/${source}/sync?limit=50&score=true`, { method: 'POST' });
+    const data = await res.json();
+    toast(`✓ ${data.scored_count} customers loaded from ${source} (${data.mode})`);
+    if (typeof loadCustomers === 'function') loadCustomers();
+    renderBatchOverview(data, `${capitalize(source)} Sync Summary`);
+    Promise.all([loadOverview(), loadRealtime()]).catch(console.error);
+  } catch (err) {
+    toast(`Sync failed for ${source}`);
+  }
+}
+
+async function syncAllConnectors() {
+  toast('Syncing all sources...');
+  try {
+    const res = await fetch('/api/v1/connectors/sync-all?limit_per_source=25&score=true', { method: 'POST' });
+    const data = await res.json();
+    const lastTime = document.getElementById('sync-last-time');
+    if (lastTime) lastTime.textContent = `Last synced: just now`;
+    toast(`✓ ${data.scored_count} customers loaded from ${data.total_synced} records`);
+    if (typeof loadCustomers === 'function') loadCustomers();
+    renderBatchOverview(data, `Global Sync Summary`);
+    Promise.all([loadOverview(), loadRealtime()]).catch(console.error);
+  } catch (err) {
+    toast('Sync all failed');
+  }
+}
+
+async function fetchFromCrm() {
+  const cid = $("user_id").value.trim();
+  if (!cid) {
+    toast("Enter a Customer ID to lookup");
+    return;
+  }
+  toast(`Looking up ${cid}...`);
+  try {
+    const data = await api(`/api/v1/connectors/lookup/${encodeURIComponent(cid)}`);
+    $("avg_plan_price").value = data.avg_plan_price;
+    $("total_amount_paid").value = data.total_amount_paid;
+    $("total_transactions").value = data.total_transactions;
+    $("billing_tenure_days").value = data.billing_tenure_days;
+    $("auto_renew_count").value = data.auto_renew_count;
+    $("total_cancellations").value = data.total_cancellations;
+    toast(`✓ Data loaded for ${cid} from ${data._connector_source}`);
+  } catch (err) {
+    toast(`Lookup failed: ${err.message}`);
+  }
+}
+
 async function init() {
   document.documentElement.dataset.theme = localStorage.getItem("retention-theme") || "dark";
   bindEvents();
   setView((location.hash || "#overview").slice(1));
   runIcons();
+  loadConnectorStatus();
   try {
     await Promise.all([loadOverview(), loadCustomers()]);
     await loadRealtime();
@@ -883,3 +1233,4 @@ async function init() {
 }
 
 init();
+
