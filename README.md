@@ -17,7 +17,6 @@
   - [Feature Definitions](#2-detailed-feature-definitions-the-7-pillars)
   - [Model Training](#3-model-training)
 - [Data Ingestion Suite](#-data-ingestion-suite)
-  - [CRM Connectors](#1-direct-crm-connectors-live-api)
   - [Smart CSV Engine](#2-smart-csv-engine-dual-mode)
 - [Preparing Test Data](#️-preparing-test-data-csv-templates)
 - [API Reference](#api-reference)
@@ -120,14 +119,7 @@ Every customer record analyzed by the model must provide or be reduced to these 
 
 ## 🔌 Data Ingestion Suite
 
-The platform supports three primary ways to feed data into the AI engine.
-
-### 1. Direct CRM Connectors (Live API)
-Connect your existing stack via `backend/.env`. The system uses an **Adapter Pattern** to normalize disparate data into the 7-feature model.
-*   **HubSpot**: Syncs contacts and properties.
-*   **Stripe**: Syncs customers, invoices, and subscription status.
-*   **Mixpanel**: Pulls behavioral telemetry and cohort data.
-*   **Salesforce**: Enterprise account and opportunity sync.
+The platform supports two primary ways to feed data into the AI engine.
 
 ### 2. Smart CSV Engine (Dual-Mode)
 *   **Formatted Mode**: Upload a CSV where each row is a customer already matching the 7 features.
