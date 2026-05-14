@@ -132,6 +132,33 @@ Enter a HubSpot or Stripe ID in the Analysis form and click **Fetch** to pull li
 
 ---
 
+---
+
+## 🛠️ Preparing Test Data (CSV Templates)
+
+If you are not using a live CRM sync, you can upload test data via CSV. The engine supports two distinct formats.
+
+### 1. "Ready" Mode (Pre-calculated Features)
+Use this if you already have a summary of customer behavior.
+**File: `test_ready.csv`**
+```csv
+user_id,avg_plan_price,total_amount_paid,total_transactions,billing_tenure_days,auto_renew_count,total_cancellations
+cust_001,499.0,1497.0,3,90,2,0
+cust_002,99.0,198.0,2,30,0,1
+```
+
+### 2. "Raw" Mode (Transaction Logs)
+Use this if you have a list of raw payment events. The AI engine will group these by `customer_id` and compute the risk features automatically.
+**File: `test_raw.csv`**
+```csv
+customer_id,transaction_date,amount,plan_name,is_cancellation,is_auto_renew
+user_A,2024-01-01,500,Premium,0,1
+user_A,2024-02-01,500,Premium,0,1
+user_B,2024-01-15,100,Basic,1,0
+```
+
+---
+
 #### 3. Model Training
 - **Algorithm**: XGBoost with RandomizedSearchCV hyperparameter optimization
 - **Best Parameters**: `max_depth=6, learning_rate=0.05, scale_pos_weight=5, subsample=0.9, colsample_bytree=0.8`
@@ -330,40 +357,45 @@ The frontend is a **Vanilla JS single-page application** served through FastAPI 
 
 ---
 
-## Setup & Run
+## 🚀 How to Run & Test
 
-### Prerequisites
-- Python 3.10+
-- pip
+Follow these steps to get the environment up and running for testing.
 
-### 1. Install Dependencies
+### 1. Prerequisites
+- **Python 3.10+** (Verify with `python --version`)
+- **Git** (to clone/manage the repo)
 
+### 2. Installation
+1.  **Clone the repository** (if not already local).
+2.  **Install dependencies**:
+    ```bash
+    pip install -r backend/requirements.txt
+    ```
+
+### 3. Environment Setup
+1.  Navigate to the `backend/` directory.
+2.  Open `.env` and paste your API keys:
+    - `HUBSPOT_API_KEY` (for CRM sync)
+    - `STRIPE_SECRET_KEY` (for billing sync)
+    - `LLAMA_API_KEY` (for Groq AI insights)
+    - `SENDER_EMAIL/PASSWORD` (for retention email alerts)
+
+### 4. Running the Server
+From the project root:
 ```bash
-pip install -r backend/requirements.txt
+uvicorn backend.main:app --reload --port 8000
 ```
+*The reloader is active, so changes to backend code will refresh the server automatically.*
 
-### 2. Run the Backend
-
-From the `backend/` directory:
-
-```bash
-uvicorn main:app --reload --port 8000
-```
-
-### 3. Open the Dashboard
-
-Navigate to:
-```
-http://127.0.0.1:8000
-```
-
-The frontend is automatically served by FastAPI as static files.
-
-### 4. Health Check
-
-```
-http://127.0.0.1:8000/api/v1/health
-```
+### 5. Testing the Integration
+1.  **Open Dashboard**: Go to `http://127.0.0.1:8000`.
+2.  **Test Live Sync**: Go to the **Analysis** tab, find **HubSpot** in the "Data Sources" panel, and click **Test**. If it turns green (LIVE), click **Try** to pull a real record.
+3.  **Test CSV Upload**:
+    - Download the `test_ready.csv` example above.
+    - Go to **Smart CSV Batch Analysis** in the dashboard.
+    - Drag and drop your file into the **Formatted Data** tab.
+    - Click **Upload & Score**.
+4.  **Verify Results**: Check the **Batch Analysis Summary** that appears to see the aggregate risk of your test data.
 
 ---
 
