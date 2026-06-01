@@ -1,0 +1,5 @@
+[33m5bcf717[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m refactor: modularize backend into a scalable router-based architecture with integrated email campaign and connector services
+[33m386f36a[m docs: add table visualizations to README input format examples
+[33maf59aeb[m docs: renumber documentation sections for data ingestion methods
+[33m8d293be[m docs: remove CRM connector documentation from README
+[33mc85a3ac[m docs: update README navigation and expand project documentation sections
