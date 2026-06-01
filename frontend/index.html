@@ -1,13 +1,13 @@
 <!doctype html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Retention AI Command Center</title>
+  <title>مركز قيادة الذكاء الاصطناعي للاحتفاظ بالعملاء</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=3" />
 </head>
 <body>
   <div class="app-shell">
@@ -15,22 +15,22 @@
       <div class="brand">
         <div class="brand-mark">RA</div>
         <div>
-          <strong>Retention AI</strong>
-          <span>Enterprise command center</span>
+          <strong>الاحتفاظ بالعملاء</strong>
+          <span>مركز القيادة للمؤسسات</span>
         </div>
       </div>
 
       <nav class="nav-list" aria-label="Primary">
-        <a class="nav-item active" href="#overview" data-view="overview"><i data-lucide="layout-dashboard"></i><span>Overview</span></a>
-        <a class="nav-item" href="#customers" data-view="customers"><i data-lucide="users"></i><span>All Customers</span></a>
-        <a class="nav-item" href="#analysis" data-view="analysis"><i data-lucide="brain-circuit"></i><span>AI Analysis</span></a>
-        <a class="nav-item" href="#realtime" data-view="realtime"><i data-lucide="activity"></i><span>Realtime</span></a>
+        <a class="nav-item active" href="#overview" data-view="overview"><i data-lucide="layout-dashboard"></i><span>نظرة عامة</span></a>
+        <a class="nav-item" href="#customers" data-view="customers"><i data-lucide="users"></i><span>جميع العملاء</span></a>
+        <a class="nav-item" href="#analysis" data-view="analysis"><i data-lucide="brain-circuit"></i><span>تحليل الذكاء الاصطناعي</span></a>
+        <a class="nav-item" href="#realtime" data-view="realtime"><i data-lucide="activity"></i><span>تحديثات حية</span></a>
       </nav>
 
       <div class="sidebar-status">
         <span class="pulse"></span>
         <div>
-          <strong id="modelStatus">Model checking</strong>
+          <strong id="modelStatus">التحقق من النموذج</strong>
           <span>FastAPI + XGBoost</span>
         </div>
       </div>
@@ -39,13 +39,13 @@
     <main class="workspace">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Customer Retention Intelligence</p>
-          <h1>AI Risk Operations Dashboard</h1>
+          <p class="eyebrow">ذكاء الاحتفاظ بالعملاء</p>
+          <h1>لوحة عمليات الذكاء الاصطناعي للمخاطر</h1>
         </div>
         <div class="topbar-actions">
-          <button class="icon-button" id="overviewPdfBtn" type="button" aria-label="Save overview PDF"><i data-lucide="file-down"></i></button>
-          <button class="icon-button" id="refreshBtn" type="button" aria-label="Refresh dashboard"><i data-lucide="refresh-cw"></i></button>
-          <button class="icon-button" id="themeToggle" type="button" aria-label="Toggle theme"><i data-lucide="sun-moon"></i></button>
+          <button class="icon-button" id="overviewPdfBtn" type="button" aria-label="حفظ نظرة عامة كملف PDF"><i data-lucide="file-down"></i></button>
+          <button class="icon-button" id="refreshBtn" type="button" aria-label="تحديث اللوحة"><i data-lucide="refresh-cw"></i></button>
+          <button class="icon-button" id="themeToggle" type="button" aria-label="تبديل المظهر"><i data-lucide="sun-moon"></i></button>
         </div>
       </header>
 
@@ -64,10 +64,10 @@
           <section class="panel chart-panel">
             <div class="panel-header">
               <div>
-                <h2>Churn Distribution</h2>
-                <p>Portfolio risk bands by customer count.</p>
+                <h2>توزيع التسرب</h2>
+                <p>نطاقات المخاطر حسب عدد العملاء.</p>
               </div>
-              <span class="badge success">Live</span>
+              <span class="badge success">مباشر</span>
             </div>
             <div class="chart-wrap"><canvas id="churnChart"></canvas></div>
           </section>
@@ -75,8 +75,8 @@
           <section class="panel chart-panel">
             <div class="panel-header">
               <div>
-                <h2>Monthly Retention Trend</h2>
-                <p>Retention rate, risk, and intervention volume.</p>
+                <h2>اتجاه الاحتفاظ الشهري</h2>
+                <p>معدل الاحتفاظ، المخاطر، وحجم التدخل.</p>
               </div>
             </div>
             <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
@@ -85,8 +85,8 @@
           <section class="panel chart-panel">
             <div class="panel-header">
               <div>
-                <h2>Revenue Impact</h2>
-                <p>Protected, watchlist, and exposed revenue.</p>
+                <h2>تأثير الإيرادات</h2>
+                <p>الإيرادات المحمية، تحت المراقبة، والمعرضة للخطر.</p>
               </div>
             </div>
             <div class="chart-wrap"><canvas id="revenueChart"></canvas></div>
@@ -95,8 +95,8 @@
           <section class="panel chart-panel">
             <div class="panel-header">
               <div>
-                <h2>AI Action Distribution</h2>
-                <p>Operational mix of retention decisions.</p>
+                <h2>توزيع إجراءات الذكاء الاصطناعي</h2>
+                <p>المزيج التشغيلي لقرارات الاحتفاظ.</p>
               </div>
             </div>
             <div class="chart-wrap"><canvas id="actionChart"></canvas></div>
@@ -108,25 +108,25 @@
         <section class="panel table-panel">
           <div class="panel-header table-tools">
             <div>
-              <h2>All Customers Analytics</h2>
-              <p>Search, filter, sort, inspect, and remove customers you analyzed or uploaded.</p>
+              <h2>تحليلات جميع العملاء</h2>
+              <p>ابحث، صفِّ، رتب، افحص، واحذف العملاء الذين قمت بتحليلهم أو رفعهم.</p>
             </div>
             <div class="filters">
               <label class="search-box">
                 <i data-lucide="search"></i>
-                <input id="customerSearch" type="search" placeholder="Search customer or segment" />
+                <input id="customerSearch" type="search" placeholder="ابحث عن عميل أو شريحة" />
               </label>
-              <select id="riskFilter" aria-label="Risk filter">
-                <option value="all">All risk</option>
-                <option value="critical">Critical</option>
-                <option value="high">High+</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
+              <select id="riskFilter" aria-label="تصفية حسب المخاطر">
+                <option value="all">جميع المخاطر</option>
+                <option value="critical">حرجة</option>
+                <option value="high">عالية وأكثر</option>
+                <option value="medium">متوسطة</option>
+                <option value="low">منخفضة</option>
               </select>
-              <select id="vipFilter" aria-label="VIP filter">
-                <option value="all">All customers</option>
-                <option value="vip">VIP only</option>
-                <option value="standard">Standard only</option>
+              <select id="vipFilter" aria-label="تصفية حسب الأهمية">
+                <option value="all">جميع العملاء</option>
+                <option value="vip">كبار الشخصيات (VIP) فقط</option>
+                <option value="standard">العملاء العاديين فقط</option>
               </select>
             </div>
           </div>
@@ -135,21 +135,21 @@
             <table>
               <thead>
                 <tr>
-                  <th data-sort="customer_id">Customer ID</th>
-                  <th data-sort="risk">Risk %</th>
+                  <th data-sort="customer_id">معرف العميل</th>
+                  <th data-sort="risk">نسبة الخطر %</th>
                   <th>VIP</th>
-                  <th data-sort="revenue">Revenue</th>
-                  <th data-sort="tenure">Tenure</th>
-                  <th data-sort="cancel_rate">Cancel Rate</th>
-                  <th>Retention Status</th>
-                  <th>AI Decision</th>
-                  <th data-sort="priority_score">Priority</th>
-                  <th data-sort="last_activity">Last Activity</th>
-                  <th>Actions</th>
+                  <th data-sort="revenue">الإيرادات</th>
+                  <th data-sort="tenure">مدة الاشتراك</th>
+                  <th data-sort="cancel_rate">معدل الإلغاء</th>
+                  <th>حالة الاحتفاظ</th>
+                  <th>قرار الذكاء الاصطناعي</th>
+                  <th data-sort="priority_score">الأولوية</th>
+                  <th data-sort="last_activity">آخر نشاط</th>
+                  <th>إجراءات</th>
                 </tr>
               </thead>
               <tbody id="customersBody">
-                <tr><td colspan="11"><div class="table-loading">Loading customers...</div></td></tr>
+                <tr><td colspan="11"><div class="table-loading">جاري تحميل العملاء...</div></td></tr>
               </tbody>
             </table>
           </div>
@@ -157,19 +157,19 @@
           <div class="pagination">
             <span id="paginationText">--</span>
             <div>
-              <button class="small-button" id="prevPage" type="button"><i data-lucide="chevron-left"></i></button>
-              <button class="small-button" id="nextPage" type="button"><i data-lucide="chevron-right"></i></button>
+              <button class="small-button" id="prevPage" type="button"><i data-lucide="chevron-right"></i></button>
+              <button class="small-button" id="nextPage" type="button"><i data-lucide="chevron-left"></i></button>
             </div>
           </div>
         </section>
 
         <div class="panel-grid compact">
           <section class="panel chart-panel">
-            <div class="panel-header"><div><h2>Customer Segmentation</h2><p>Count and average risk by segment.</p></div></div>
+            <div class="panel-header"><div><h2>شرائح العملاء</h2><p>العدد ومتوسط المخاطر حسب الشريحة.</p></div></div>
             <div class="chart-wrap"><canvas id="segmentChart"></canvas></div>
           </section>
           <section class="panel">
-            <div class="panel-header"><div><h2>Risk Heatmap</h2><p>Segment-level risk concentration.</p></div></div>
+            <div class="panel-header"><div><h2>خريطة حرارية للمخاطر</h2><p>تركيز المخاطر على مستوى الشرائح.</p></div></div>
             <div class="heatmap" id="riskHeatmap"></div>
           </section>
         </div>
@@ -180,50 +180,50 @@
           <section class="panel form-panel">
             <div class="panel-header">
               <div>
-                <h2>Single Customer Scoring</h2>
-                <p>Run the existing AI prediction flow and generate structured LLM insights.</p>
+                <h2>تقييم عميل فردي</h2>
+                <p>تشغيل تدفق الذكاء الاصطناعي وإنشاء رؤى منظمة.</p>
               </div>
-              <button class="small-button text" id="fillExampleBtn" type="button">Example</button>
+              <button class="small-button text" id="fillExampleBtn" type="button">مثال</button>
             </div>
 
             <form id="predictionForm" class="form-grid">
               <label>
-                <span>Customer ID</span>
+                <span>معرف العميل</span>
                 <div style="display: flex; gap: 8px;">
                   <input id="user_id" type="text" value="hs_mock_1001" required style="flex: 1;" />
-                  <button type="button" class="small-button" onclick="fetchFromCrm()" title="Lookup in active connectors">
-                    <i data-lucide="search"></i><span>Fetch</span>
+                  <button type="button" class="small-button" onclick="fetchFromCrm()" title="بحث في المصادر النشطة">
+                    <i data-lucide="search"></i><span>جلب</span>
                   </button>
                 </div>
               </label>
-              <label><span>Avg Plan Price</span><input id="avg_plan_price" type="number" value="550" required /></label>
-              <label><span>Total Paid</span><input id="total_amount_paid" type="number" value="550" required /></label>
-              <label><span>Total Transactions</span><input id="total_transactions" type="number" value="2" required /></label>
-              <label><span>Billing Tenure Days</span><input id="billing_tenure_days" type="number" value="40" required /></label>
-              <label><span>Auto-Renew Count</span><input id="auto_renew_count" type="number" value="0" required /></label>
-              <label><span>Cancellations</span><input id="total_cancellations" type="number" value="1" required /></label>
-              <label class="check-row"><input id="useLlama" type="checkbox" checked /><span>Enhance with Groq LLaMA</span></label>
-              <button id="analyzeBtn" class="primary-button" type="submit"><i data-lucide="sparkles"></i><span>Analyze Customer</span></button>
+              <label><span>متوسط سعر الخطة</span><input id="avg_plan_price" type="number" value="550" required /></label>
+              <label><span>إجمالي المدفوعات</span><input id="total_amount_paid" type="number" value="550" required /></label>
+              <label><span>إجمالي العمليات</span><input id="total_transactions" type="number" value="2" required /></label>
+              <label><span>أيام مدة الفوترة</span><input id="billing_tenure_days" type="number" value="40" required /></label>
+              <label><span>مرات التجديد التلقائي</span><input id="auto_renew_count" type="number" value="0" required /></label>
+              <label><span>الإلغاءات</span><input id="total_cancellations" type="number" value="1" required /></label>
+              <label class="check-row"><input id="useLlama" type="checkbox" checked /><span>تحسين باستخدام Groq LLaMA</span></label>
+              <button id="analyzeBtn" class="primary-button" type="submit"><i data-lucide="sparkles"></i><span>تحليل العميل</span></button>
             </form>
 
             <!-- Data Sources / Connectors Panel -->
             <div class="connectors-section" style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-              <h3>Data Sources</h3>
-              <p class="form-note">Synchronize customer records from active CRM, telemetry, and billing pipelines.</p>
+              <h3>مصادر البيانات</h3>
+              <p class="form-note">مزامنة سجلات العملاء من أنظمة إدارة العملاء والقياس عن بعد والفواتير النشطة.</p>
               <div id="connector-panel" class="connector-panel" style="display: grid; gap: 10px; margin-top: 12px;">
-                <div class="form-note">Loading connection statuses...</div>
+                <div class="form-note">جاري تحميل حالات الاتصال...</div>
               </div>
             </div>
 
             <!-- Smart CSV Upload Tabs -->
             <div class="csv-upload-container" style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-              <h3>Smart CSV Batch Analysis</h3>
+              <h3>التحليل الذكي لملفات CSV</h3>
               <div class="csv-tabs" style="display: flex; gap: 8px; margin: 12px 0;">
                 <button class="csv-tab active" data-tab="ready" onclick="switchCsvTab('ready')" type="button">
-                  Formatted Data
+                  بيانات منسقة
                 </button>
                 <button class="csv-tab" data-tab="raw" onclick="switchCsvTab('raw')" type="button">
-                  Raw Transactions
+                  عمليات خام
                 </button>
               </div>
 
@@ -231,16 +231,16 @@
               <div id="tab-ready" class="csv-tab-content active">
                 <label class="upload-dropzone file-drop" id="dropzone-ready">
                   <i data-lucide="upload-cloud"></i>
-                  <span>↑ Drop Formatted CSV or click to browse</span>
+                  <span>↑ أسقط ملف CSV منسق أو انقر للتصفح</span>
                   <input type="file" accept=".csv" onchange="handleCsvFile(event, 'ready')">
                 </label>
                 <p class="csv-columns-hint form-note" style="margin-top: 8px;">
-                  Required: <code>user_id · avg_plan_price · total_amount_paid · total_transactions · billing_tenure_days · auto_renew_count · total_cancellations</code>
-                  <br><small>cancel_rate is computed automatically</small>
+                  مطلوب: <code>user_id · avg_plan_price · total_amount_paid · total_transactions · billing_tenure_days · auto_renew_count · total_cancellations</code>
+                  <br><small>يتم حساب معدل الإلغاء تلقائياً</small>
                 </p>
                 <div class="csv-actions" style="display: flex; gap: 10px; margin-top: 12px;">
-                  <button class="small-button text" onclick="downloadTemplate('ready')" type="button">↓ Download Template</button>
-                  <button class="primary-button" onclick="uploadCsv('ready')" type="button" style="flex: 1;">Upload &amp; Score →</button>
+                  <button class="small-button text" onclick="downloadTemplate('ready')" type="button">↓ تحميل القالب</button>
+                  <button class="primary-button" onclick="uploadCsv('ready')" type="button" style="flex: 1;">رفع وتقييم ←</button>
                 </div>
               </div>
 
@@ -248,17 +248,17 @@
               <div id="tab-raw" class="csv-tab-content" style="display:none">
                 <label class="upload-dropzone file-drop" id="dropzone-raw">
                   <i data-lucide="file-spreadsheet"></i>
-                  <span>↑ Drop Raw Transaction Log or click to browse</span>
+                  <span>↑ أسقط سجل العمليات الخام أو انقر للتصفح</span>
                   <input type="file" accept=".csv" onchange="handleCsvFile(event, 'raw')">
                 </label>
                 <p class="csv-columns-hint form-note" style="margin-top: 8px;">
-                  Required: <code>customer_id · transaction_date · amount · plan_name</code><br>
-                  Optional: <code>is_cancellation · is_auto_renew</code><br>
-                  <small>Each row = one transaction. Features are engineered automatically per customer.</small>
+                  مطلوب: <code>customer_id · transaction_date · amount · plan_name</code><br>
+                  اختياري: <code>is_cancellation · is_auto_renew</code><br>
+                  <small>كل صف = عملية واحدة. يتم هندسة الميزات تلقائياً لكل عميل.</small>
                 </p>
                 <div class="csv-actions" style="display: flex; gap: 10px; margin-top: 12px;">
-                  <button class="small-button text" onclick="downloadTemplate('raw')" type="button">↓ Download Template</button>
-                  <button class="primary-button" onclick="uploadCsv('raw')" type="button" style="flex: 1;">Upload &amp; Score →</button>
+                  <button class="small-button text" onclick="downloadTemplate('raw')" type="button">↓ تحميل القالب</button>
+                  <button class="primary-button" onclick="uploadCsv('raw')" type="button" style="flex: 1;">رفع وتقييم ←</button>
                 </div>
               </div>
               <div id="csvUploadStatus" class="form-note" style="margin-top: 12px;"></div>
@@ -268,8 +268,8 @@
           <section class="panel insights-panel" id="insightsPanel">
             <div class="empty-state">
               <i data-lucide="scan-line"></i>
-              <h2>Structured AI Insights</h2>
-              <p>Run a customer analysis to render executive summary, risk score, recommendations, timeline, intervention status, and confidence.</p>
+              <h2>رؤى الذكاء الاصطناعي المنظمة</h2>
+              <p>قم بتشغيل تحليل العميل لعرض الملخص التنفيذي، درجة المخاطرة، التوصيات، الجدول الزمني، حالة التدخل، ومستوى الثقة.</p>
             </div>
           </section>
         </div>
@@ -278,15 +278,15 @@
       <section class="view" id="realtimeView">
         <div class="panel-grid compact">
           <section class="panel">
-            <div class="panel-header"><div><h2>Realtime Alerts</h2><p>High-risk customers and intervention logs from saved analyses.</p></div><span class="badge success">Saved data</span></div>
+            <div class="panel-header"><div><h2>تنبيهات حية</h2><p>العملاء ذوي المخاطر العالية وسجلات التدخل من التحليلات المحفوظة.</p></div><span class="badge success">بيانات محفوظة</span></div>
             <div class="alert-list" id="alertList"></div>
           </section>
           <section class="panel">
-            <div class="panel-header"><div><h2>Activity Feed</h2><p>AI interventions and model events.</p></div></div>
+            <div class="panel-header"><div><h2>سجل النشاط</h2><p>تدخلات الذكاء الاصطناعي وأحداث النموذج.</p></div></div>
             <div class="activity-feed" id="activityFeed"></div>
           </section>
           <section class="panel">
-            <div class="panel-header"><div><h2>VIP vs Non-VIP</h2><p>Portfolio composition.</p></div></div>
+            <div class="panel-header"><div><h2>VIP مقابل عاديين</h2><p>تكوين المحفظة.</p></div></div>
             <div class="chart-wrap"><canvas id="vipChart"></canvas></div>
           </section>
         </div>
@@ -299,10 +299,10 @@
     <section class="drawer-panel">
       <div class="drawer-header">
         <div>
-          <p class="eyebrow">Customer Detail</p>
-          <h2 id="drawerTitle">Customer</h2>
+          <p class="eyebrow">تفاصيل العميل</p>
+          <h2 id="drawerTitle">عميل</h2>
         </div>
-        <button class="icon-button" id="closeDrawer" type="button" aria-label="Close drawer"><i data-lucide="x"></i></button>
+        <button class="icon-button" id="closeDrawer" type="button" aria-label="إغلاق اللوحة"><i data-lucide="x"></i></button>
       </div>
       <div id="drawerContent" class="drawer-content"></div>
     </section>
@@ -312,6 +312,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>

@@ -33,3 +33,7 @@ retention_customer_store.json
 
 # Jupyter
 .ipynb_checkpoints/
+
+PROJECT_EXPLANATION.md
+
+BACKEND_PROJECT_EXPLANATION.md

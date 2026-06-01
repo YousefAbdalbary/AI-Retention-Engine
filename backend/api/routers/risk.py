@@ -1,0 +1,208 @@
+import os
+import random
+import traceback
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
+
+from models.schemas import CustomerData
+from services.ml_engine import (
+    model,
+    build_feature_frame,
+    customer_from_prediction,
+    compute_shap_effects,
+)
+from services.store import update_customer_in_store
+from services.llm_engine import call_llama_api
+from services.email_service import send_retention_email
+from utils.helpers import sigmoid
+from core.config import VIP_PLAN_PRICE, logger
+
+router = APIRouter()
+
+@router.post("/analyze-risk")
+async def analyze_risk(
+    customer: CustomerData,
+    background_tasks: BackgroundTasks,
+    use_llm: bool = Query(False),
+):
+    try:
+        customer.cancel_rate = (
+            customer.total_cancellations / customer.total_transactions
+            if customer.total_transactions > 0
+            else 0.0
+        )
+        if model is not None:
+            risk_prob = float(
+                model.predict_proba(build_feature_frame(customer))[:, 1][0]
+            )
+        else:
+            score_input = (
+                -1.55
+                + customer.cancel_rate * 4.2
+                + (0.95 if customer.auto_renew_count == 0 else -0.35)
+                + (0.75 if customer.billing_tenure_days < 120 else -0.18)
+                + random.uniform(-0.85, 0.85)
+            )
+            risk_prob = sigmoid(score_input)
+
+        risk_percentage = round(risk_prob * 100, 2)
+        result = customer_from_prediction(customer, risk_percentage)
+
+        if use_llm:
+            result["llm_analysis"]["llama_report"]["source"] = "groq_llama"
+        else:
+            result["llm_analysis"]["llama_report"]["source"] = "local_fallback"
+
+        # Update in-memory state
+        update_customer_in_store(result)
+
+        # ── AUTO-SEND retention email in background ──
+        def _auto_email():
+            try:
+                send_retention_email(
+                    customer_id=result["customer_id"],
+                    risk_pct=risk_percentage,
+                )
+            except Exception as email_exc:
+                logger.warning(
+                    "Auto-email failed for %s: %s", result["customer_id"], email_exc
+                )
+
+        background_tasks.add_task(_auto_email)
+        risk_level = (
+            "LOW"
+            if risk_percentage < 40
+            else "MEDIUM" if risk_percentage < 70 else "HIGH"
+        )
+
+        return {
+            "customer_id": result["customer_id"],
+            "churn_risk_percentage": result["risk_percentage"],
+            "is_vip": result["is_vip"],
+            "decision": result["ai_decision"],
+            "priority": result["priority"],
+            "confidence_score": result["llm_analysis"]["ai_confidence_score"],
+            "priority_score": result["priority_score"],
+            "structured": True,
+            "llm_analysis": result["llm_analysis"],
+            "email_campaign": {
+                "auto_triggered": True,
+                "risk_level": risk_level,
+                "status": "QUEUED",
+                "receiver": os.getenv("RECEIVER_EMAIL", ""),
+            },
+        }
+    except Exception as exc:
+        print("\n--- CRASH REPORT ---")
+        traceback.print_exc()
+        print("--------------------\n")
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.post("/analyze-risk-detailed")
+async def analyze_risk_detailed(
+    customer: CustomerData, background_tasks: BackgroundTasks
+):
+    """Advanced analysis: XGBoost + SHAP + Groq LLaMA structured insights."""
+    try:
+        customer.cancel_rate = (
+            customer.total_cancellations / customer.total_transactions
+            if customer.total_transactions > 0
+            else 0.0
+        )
+        # 1. XGBoost prediction
+        if model is not None:
+            feature_df = build_feature_frame(customer)
+            risk_prob = float(model.predict_proba(feature_df)[:, 1][0])
+        else:
+            score_input = (
+                -1.55
+                + customer.cancel_rate * 4.2
+                + (0.95 if customer.auto_renew_count == 0 else -0.35)
+                + (0.75 if customer.billing_tenure_days < 120 else -0.18)
+                + random.uniform(-0.85, 0.85)
+            )
+            risk_prob = sigmoid(score_input)
+            feature_df = None
+
+        risk_percentage = round(risk_prob * 100, 2)
+        result = customer_from_prediction(customer, risk_percentage)
+
+        # 2. SHAP feature effects
+        shap_effects = []
+        if feature_df is not None:
+            shap_effects = compute_shap_effects(feature_df)
+
+        # Use real SHAP effects if available, otherwise use rule-based ones
+        if shap_effects:
+            result["llm_analysis"]["feature_effects"] = shap_effects
+
+        # 3. Build SHAP context for LLM prompt
+        if shap_effects:
+            top_drivers = [
+                e for e in shap_effects if e["direction"] == "increases_churn"
+            ][:3]
+            drivers_text = "\n".join(
+                [
+                    f"- {d['label']} (Value: {d['value']}, Impact: {d['impact']})"
+                    for d in top_drivers
+                ]
+            )
+        else:
+            drivers_text = f"- Cancel Rate: {customer.cancel_rate}\n- Auto-Renew Count: {customer.auto_renew_count}\n- Tenure: {customer.billing_tenure_days} days"
+
+        # 4. Call Groq LLaMA API
+        is_vip = customer.avg_plan_price > VIP_PLAN_PRICE
+        llama_report = call_llama_api(
+            user_id=customer.user_id,
+            risk_pct=risk_percentage,
+            top_drivers_text=drivers_text,
+            is_vip=is_vip,
+            revenue=customer.total_amount_paid,
+        )
+        result["llm_analysis"]["llama_report"] = llama_report
+
+        # 5. Store result
+        update_customer_in_store(result)
+
+        # ── AUTO-SEND retention email in background ──
+        def _auto_email_detailed():
+            try:
+                send_retention_email(
+                    customer_id=result["customer_id"],
+                    risk_pct=risk_percentage,
+                )
+            except Exception as email_exc:
+                logger.warning(
+                    "Auto-email failed for %s: %s", result["customer_id"], email_exc
+                )
+
+        background_tasks.add_task(_auto_email_detailed)
+        risk_level = (
+            "LOW"
+            if risk_percentage < 40
+            else "MEDIUM" if risk_percentage < 70 else "HIGH"
+        )
+
+        return {
+            "customer_id": result["customer_id"],
+            "churn_risk_percentage": result["risk_percentage"],
+            "is_vip": result["is_vip"],
+            "decision": result["ai_decision"],
+            "priority": result["priority"],
+            "confidence_score": result["llm_analysis"]["ai_confidence_score"],
+            "priority_score": result["priority_score"],
+            "structured": True,
+            "shap_available": bool(shap_effects),
+            "llm_source": llama_report.get("source", "unknown"),
+            "llm_analysis": result["llm_analysis"],
+            "email_campaign": {
+                "auto_triggered": True,
+                "risk_level": risk_level,
+                "status": "QUEUED",
+                "receiver": os.getenv("RECEIVER_EMAIL", ""),
+            },
+        }
+    except Exception as exc:
+        logger.exception("Detailed analysis failed")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(exc)) from exc

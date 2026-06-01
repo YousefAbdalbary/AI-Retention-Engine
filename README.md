@@ -1,6 +1,6 @@
 # 🤖 Customer Retention AI — Enterprise Intelligence Platform
 
-> AI-powered customer churn prediction and retention strategy engine built with **XGBoost**, **SHAP explainability**, **Groq LLaMA 3.3 LLM**, **FastAPI**, and a **Vanilla JS** enterprise dashboard.
+> AI-powered customer churn prediction and retention strategy engine built with **XGBoost**, **SHAP explainability**, **Groq LLaMA 3.3 LLM**, **FastAPI** (Modular Architecture), and a **Vanilla JS** enterprise dashboard.
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue)]()
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688)]()
@@ -45,8 +45,7 @@ This project is a **full-stack AI retention intelligence platform** that:
 - 🌐 **Bilingual**: Full Arabic + English support across all AI outputs
 - 📁 **Smart CSV Engine**: Dual-mode ingestion (Formatted records vs. Raw transaction logs)
 - 🔌 **CRM Connectors**: Live sync from HubSpot, Stripe, Mixpanel, and Salesforce
-- 🔍 **One-Click Lookup**: "Fetch" and "Try" buttons for instant real-time CRM record analysis
-- 📊 **Batch Summary**: Automatic KPI overviews (Avg Risk, High Risk Count) for all uploads
+- ✉️ **Automated Emails**: Retention campaigns via personalized emails triggered automatically or in bulk.
 - 🌙 **Dark/Light Mode**: Premium theme switching
 
 ---
@@ -61,12 +60,11 @@ This project is a **full-stack AI retention intelligence platform** that:
 └──────────────────────┬──────────────────────────────────┘
                        │ fetch() JSON API calls
 ┌──────────────────────▼──────────────────────────────────┐
-│                   FastAPI Backend                        │
+│                   FastAPI Backend (Modular)             │
 │                                                         │
 │  ┌─────────────────┐  ┌──────────────────────────────┐  │
 │  │  Fast Path       │  │  Deep Analysis Path          │  │
 │  │  /analyze-risk   │  │  /analyze-risk-detailed      │  │
-│  │                  │  │                              │  │
 │  │  XGBoost Only    │  │  XGBoost + SHAP + LLaMA     │  │
 │  │  ~50ms           │  │  ~3-5 seconds                │  │
 │  └─────────────────┘  └──────────────────────────────┘  │
@@ -125,10 +123,8 @@ The platform supports two primary ways to feed data into the AI engine.
 *   **Formatted Mode**: Upload a CSV where each row is a customer already matching the 7 features.
 *   **Raw Mode (Transaction Logs)**: Upload a list of every payment/event. The engine **automatically performs Feature Engineering** to group, aggregate, and calculate tenure/risk per user.
 
-### 2 One-Click "Fetch & Try"
+### 2. One-Click "Fetch & Try"
 Enter a HubSpot or Stripe ID in the Analysis form and click **Fetch** to pull live metrics instantly, or click **Try** in the connector panel to analyze a random live record.
-
----
 
 ---
 
@@ -255,96 +251,14 @@ Same request body as above. Runs:
 3. Groq LLaMA 3.3 API call with SHAP context
 4. Structured bilingual insights generation
 
-**Additional response fields:**
-```json
-{
-  "shap_available": true,
-  "llm_source": "groq_llama",
-  "llm_analysis": {
-    "feature_effects": [
-      {
-        "label": "Cancellation Rate",
-        "label_ar": "معدل الإلغاء",
-        "value": "0.18",
-        "impact": "+12.3%",
-        "direction": "increases_churn",
-        "relative_strength": 85
-      }
-    ],
-    "llama_report": {
-      "source": "groq_llama",
-      "english": {
-        "churn_risk_summary": "...",
-        "behavioral_diagnosis": "...",
-        "root_causes_ranked": ["...", "..."],
-        "recommended_rescue_strategy": "...",
-        "empathy_guidance": "...",
-        "suggested_agent_script": "...",
-        "executive_takeaway": "..."
-      },
-      "arabic": { "..." }
-    }
-  }
-}
-```
-
 ---
 
-#### `GET /api/v1/customers` — Paginated Customer List
-
-Query params: `page`, `page_size`, `search`, `risk`, `vip`, `sort_by`, `sort_dir`
-
----
-
-#### `GET /api/v1/customer/{customer_id}` — Customer Detail
-
-Returns full customer object with analytics, LLM analysis, action history, monthly risk trends.
-
----
-
-#### `GET /api/v1/dashboard-overview` — Dashboard KPIs
-
-Returns total customers, risk band counts, revenue at risk, VIP count, alerts, activity feed.
-
----
-
-#### `GET /api/v1/analytics` — Charts & Segmentation Data
-
-Returns churn distribution, revenue impact, customer segmentation, risk heatmap, monthly trends, AI action distribution.
-
----
-
-#### `POST /api/v1/customers/upload-csv` — CSV Bulk Upload
-
-```json
-{ "csv_text": "user_id,avg_plan_price,...\ncust1,500,..." }
-```
-
----
-
-#### `DELETE /api/v1/customer/{customer_id}` — Remove Customer
-
----
-
-#### `GET /api/v1/llm-analysis/{customer_id}` — Get LLM Analysis
-
----
-
-#### `GET /api/v1/realtime` — Realtime Alerts
-
----
-
-#### `GET /api/v1/health` — Health Check
-
-```json
-{
-  "status": "ok",
-  "model_loaded": true,
-  "customers": 3200,
-  "shap_available": true,
-  "llm_configured": true
-}
-```
+#### Core Sub-Routers
+- **`/api/v1/customers`**: Management endpoints (GET all, GET one, DELETE, upload CSV)
+- **`/api/v1/dashboard-overview`** & **`/api/v1/analytics`**: Dashboard KPI and Chart aggregations
+- **`/api/v1/email`**: Bulk email dispatching, trigger campaigns, email statuses
+- **`/api/v1/connectors`**: Status, Lookup, and Sync endpoints for HubSpot, Mixpanel, etc.
+- **`/api/v1/health`**: System and configuration health checking
 
 ---
 
@@ -412,17 +326,45 @@ uvicorn backend.main:app --reload --port 8000
 
 ---
 
-## Project Structure
+## Project Structure (Refactored Modular Architecture)
+
+The backend has been completely modularized for enterprise scalability. 
 
 ```
 enterprise_retention_project/
 ├── ai-churn-presiction.ipynb          # Full ML training pipeline (Kaggle)
 ├── README.md                          # This file
 ├── backend/
-│   ├── main.py                        # FastAPI app (all endpoints + LLM + SHAP)
+│   ├── main.py                        # Minimal FastAPI entry point
 │   ├── requirements.txt               # Python dependencies
 │   ├── ai_retention_xgboost_optimized.json  # Trained XGBoost model
-│   └── retention_customer_store.json   # Persisted customer data
+│   ├── retention_customer_store.json   # Persisted customer data
+│   │
+│   ├── api/
+│   │   └── routers/                   # Modular API endpoints
+│   │       ├── risk.py                # Prediction & Analysis endpoints
+│   │       ├── customers.py           # Customer CRUD & CSV Uploads
+│   │       ├── dashboard.py           # Real-time analytics & KPIs
+│   │       ├── emails.py              # Automated email campaign handlers
+│   │       ├── connectors_api.py      # HubSpot, Mixpanel integrations
+│   │       └── health.py              # System health
+│   │
+│   ├── core/
+│   │   └── config.py                  # Env vars, constants, and logging
+│   │
+│   ├── models/
+│   │   └── schemas.py                 # Pydantic schemas (CustomerData, etc.)
+│   │
+│   ├── services/                      # Core Business Logic
+│   │   ├── ml_engine.py               # XGBoost predictions and SHAP
+│   │   ├── llm_engine.py              # Groq LLaMA integration & structured JSON
+│   │   ├── store.py                   # State & JSON persistence
+│   │   ├── email_service.py           # SMTP integration
+│   │   └── connectors.py              # External CRM API fetching
+│   │
+│   └── utils/
+│       └── helpers.py                 # Math, logic, and data timeline formatting
+│
 └── frontend/
     ├── index.html                     # Dashboard HTML structure
     ├── styles.css                     # Premium CSS (glassmorphism, dark/light)
@@ -433,27 +375,29 @@ enterprise_retention_project/
 
 ## Architecture Decisions
 
-### 1. Fast vs Deep Analysis Separation
+### 1. Modular FastApi Backend (New in v4.0)
+The previous monolithic `main.py` was separated into `core/`, `models/`, `utils/`, `services/`, and `api/routers/`. This promotes separation of concerns, easier testing, and rapid future feature addition without breaking existing pipelines.
+
+### 2. Fast vs Deep Analysis Separation
 - **`/analyze-risk`**: Lightweight XGBoost-only prediction (~50ms)
 - **`/analyze-risk-detailed`**: SHAP + LLaMA deep analysis (~3-5s)
 - Reason: SHAP is computationally expensive, LLM calls cost money/time. Enterprise systems always separate lightweight from advanced inference.
 
-### 2. Structured LLM Output (Not Raw Text)
+### 3. Structured LLM Output (Not Raw Text)
 - LLM returns **structured JSON**, not raw markdown
 - Frontend renders structured fields as cards, timelines, and panels
 - This is critical for enterprise UX — raw LLM text looks unprofessional
 
-### 3. In-Memory Storage (DB-Ready Architecture)
-- Currently uses in-memory dictionaries + synthetic data
-- Service layer pattern makes DB integration straightforward later
-- No PostgreSQL complexity during development phase
+### 4. In-Memory Storage (DB-Ready Architecture)
+- Currently uses in-memory dictionaries + synthetic data backed by JSON
+- The `services/store.py` pattern makes DB integration (like PostgreSQL) trivial later.
 
-### 4. Bilingual by Default
+### 5. Bilingual by Default
 - All AI outputs include both English and Arabic
 - Arabic text is natural/professional, not machine-translated
 - RTL layout support throughout the frontend
 
-### 5. SHAP as Optional Dependency
+### 6. SHAP as Optional Dependency
 - SHAP import is conditional (`try/except`)
 - System works without SHAP (falls back to rule-based feature effects)
 - When available, real SHAP values provide genuine model explainability
@@ -467,54 +411,8 @@ enterprise_retention_project/
 | **ML Model** | XGBoost 2.1 (trained on KKBox dataset) |
 | **Explainability** | SHAP TreeExplainer |
 | **LLM** | LLaMA 3.3 70B via Groq API |
-| **Backend** | FastAPI 0.115, Pydantic 2.9 |
+| **Backend** | FastAPI 0.115, Pydantic 2.9 (Modular Architecture) |
 | **Frontend** | HTML5, CSS3, Vanilla JavaScript |
 | **Charts** | Chart.js |
 | **Icons** | Lucide |
 | **Server** | Uvicorn (ASGI) |
-
----
-
-## How Frontend ↔ Backend Communicate
-
-1. **Frontend** collects form inputs and builds a JSON payload matching the `CustomerData` Pydantic model
-2. `app.js` calls `fetch()` → `POST /api/v1/analyze-risk` with `Content-Type: application/json`
-3. **Backend** validates via Pydantic, runs XGBoost, applies business rules, returns structured JSON
-4. **Frontend** renders results as KPI cards, risk rings, collapsible insight sections
-5. User clicks **"Run Advanced AI Analysis"** → calls `/api/v1/analyze-risk-detailed`
-6. Backend runs SHAP + calls Groq LLaMA → returns enhanced structured insights
-7. Frontend re-renders with real SHAP effects and LLM-generated retention strategy
-
-### Why CORS is Required
-Browsers block cross-origin requests. FastAPI adds CORS headers via `CORSMiddleware` to allow the frontend (served from the same origin or opened locally) to communicate with the API.
-
----
-
-## Development Roadmap
-
-### ✅ Phase 1 (Complete)
-- Enterprise dashboard with analytics
-- Customer table with search/filter/sort/pagination
-- AI prediction with structured insights
-- Dark/light mode, responsive design
-
-### ✅ Phase 2 (Complete)
-- SHAP integration for real feature explainability
-- Groq LLaMA 3.3 API integration
-- Structured bilingual AI insights (not raw text)
-- Next Best Action recommendation engine
-- Advanced Analysis endpoint separation
-
-### ✅ Phase 3 (Complete)
-- **Data Connector Suite**: HubSpot, Stripe, Mixpanel, and Salesforce integration
-- **Smart CSV Engine**: Raw transaction log aggregation and feature engineering
-- **Real-time CRM Lookup**: "Fetch" and "Try" buttons for instant record analysis
-- **Batch KPI Overviews**: Real-time summary of bulk ingestion results
-- **Environment Configuration**: Secure `.env` management for all API keys
-
-### 🔮 Phase 4 (Future)
-- PDF export with charts
-- WebSocket real-time alerts
-- Database integration (PostgreSQL)
-- Authentication & role-based access
-# AI-Retention-Engine

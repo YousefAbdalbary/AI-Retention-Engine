@@ -63,26 +63,26 @@ function renderBadge(text, tone) {
 }
 
 function renderBilingualList(englishItems = [], arabicItems = []) {
-  return englishItems.map((item, index) => `
+  return arabicItems.map((item, index) => `
     <li class="bilingual-item">
-      <span class="english">${escapeHtml(item)}</span>
-      <span class="arabic" dir="rtl">${escapeHtml(arabicItems[index] || "")}</span>
+      <span class="arabic" dir="rtl" style="font-size: 1.1em; color: var(--text);">${escapeHtml(item || "")}</span>
+      <span class="english" style="font-size: 0.85em; color: var(--muted);">${escapeHtml(englishItems[index] || "")}</span>
     </li>
   `).join("");
 }
 
 function renderBilingualTimeline(englishItems = [], arabicItems = []) {
-  return englishItems.map((item, index) => {
-    const arabic = arabicItems[index] || {};
+  return arabicItems.map((item, index) => {
+    const english = englishItems[index] || {};
     return `
       <div class="timeline-item bilingual-timeline">
-        <div>
-          <strong>${escapeHtml(item.step)}</strong>
-          <span>${escapeHtml(item.owner)} | Deadline: ${escapeHtml(item.deadline)}</span>
-        </div>
         <div class="arabic timeline-ar" dir="rtl">
-          <strong>${escapeHtml(arabic.step || "")}</strong>
-          <span>${escapeHtml(arabic.owner || "")} | الموعد النهائي: ${escapeHtml(arabic.deadline || "")}</span>
+          <strong>${escapeHtml(item.step || "")}</strong>
+          <span>المسؤول: ${escapeHtml(item.owner || "")} | الموعد النهائي: ${escapeHtml(item.deadline || "")}</span>
+        </div>
+        <div>
+          <strong style="color: var(--muted); font-size: 0.9em;">${escapeHtml(english.step)}</strong>
+          <span style="font-size: 0.85em;">${escapeHtml(english.owner)} | Deadline: ${escapeHtml(english.deadline)}</span>
         </div>
       </div>
     `;
@@ -91,13 +91,13 @@ function renderBilingualTimeline(englishItems = [], arabicItems = []) {
 
 function renderBilingualValue(english, arabic) {
   return `
-    <strong>${escapeHtml(english)}</strong>
     <strong class="arabic mini-ar" dir="rtl">${escapeHtml(arabic || "")}</strong>
+    <span style="color: var(--muted); font-size: 0.85em; font-weight: normal;">${escapeHtml(english)}</span>
   `;
 }
 
 function renderFeatureEffects(effects = []) {
-  if (!effects.length) return `<div class="table-loading">No feature contribution data available yet.</div>`;
+  if (!effects.length) return `<div class="table-loading">لا تتوفر بيانات عن تأثير الميزات حتى الآن.</div>`;
   return `
     <div class="feature-list">
       ${effects.map((effect) => {
@@ -106,15 +106,15 @@ function renderFeatureEffects(effects = []) {
           <article class="feature-effect">
             <header>
               <div>
-                <strong>${escapeHtml(effect.label)}</strong>
-                <span class="arabic" dir="rtl">${escapeHtml(effect.label_ar || "")}</span>
+                <strong class="arabic" dir="rtl" style="font-size: 1.1em;">${escapeHtml(effect.label_ar || "")}</strong>
+                <span style="font-size: 0.85em; color: var(--muted);">${escapeHtml(effect.label)}</span>
               </div>
-              ${renderBadge(increases ? "Increases churn" : "Reduces churn", increases ? "danger" : "success")}
+              ${renderBadge(increases ? "يزيد من الخطر" : "يقلل من الخطر", increases ? "danger" : "success")}
             </header>
             <div class="impact-meter ${increases ? "increases" : "reduces"}" style="--value:${Math.max(4, effect.relative_strength || 0)}%"><span></span></div>
-            <p>Value: <strong>${escapeHtml(effect.value)}</strong> | SHAP impact: <strong>${escapeHtml(effect.impact)}</strong></p>
-            <p>${escapeHtml(effect.explanation)}</p>
-            <p class="arabic" dir="rtl">${escapeHtml(effect.explanation_ar || "")}</p>
+            <p>القيمة: <strong>${escapeHtml(effect.value)}</strong> | تأثير SHAP: <strong dir="ltr">${escapeHtml(effect.impact)}</strong></p>
+            <p class="arabic" dir="rtl" style="font-size: 1.1em;">${escapeHtml(effect.explanation_ar || "")}</p>
+            <p style="font-size: 0.85em; color: var(--muted);">${escapeHtml(effect.explanation)}</p>
           </article>
         `;
       }).join("")}
@@ -124,25 +124,25 @@ function renderFeatureEffects(effects = []) {
 
 function renderNbaRecommendation(nba = {}) {
   const offers = nba.ranked_offers || [];
-  if (!offers.length) return `<div class="table-loading">No NBA offer ranking available yet.</div>`;
+  if (!offers.length) return `<div class="table-loading">لا يتوفر تصنيف لعروض الإجراء الأفضل حتى الآن.</div>`;
   return `
     <div class="offer-list">
-      <p>${escapeHtml(nba.architecture || "Candidate Generation -> Scoring -> Final Recommendation")}</p>
-      <p>${escapeHtml(nba.ranking_reason || "")}</p>
-      <p class="arabic" dir="rtl">${escapeHtml(nba.ranking_reason_ar || "")}</p>
+      <p style="font-size: 0.85em; color: var(--muted);">${escapeHtml(nba.architecture || "توليد المرشحين -> التقييم -> التوصية النهائية")}</p>
+      <p class="arabic" dir="rtl" style="font-size: 1.1em; margin-bottom: 4px;">${escapeHtml(nba.ranking_reason_ar || "")}</p>
+      <p style="font-size: 0.85em; color: var(--muted);">${escapeHtml(nba.ranking_reason || "")}</p>
       ${offers.map((offer, index) => `
         <article class="offer-card">
           <header>
             <div class="offer-rank">#${index + 1}</div>
             <div>
-              <strong>${escapeHtml(offer.title)}</strong>
-              <span class="arabic" dir="rtl">${escapeHtml(offer.title_ar || "")}</span>
+              <strong class="arabic" dir="rtl" style="font-size: 1.1em;">${escapeHtml(offer.title_ar || "")}</strong>
+              <span style="font-size: 0.85em; color: var(--muted);">${escapeHtml(offer.title)}</span>
             </div>
-            ${index === 0 ? renderBadge("Selected NBA", "success") : renderBadge(`Score ${offer.net_value_score}`, "")}
+            ${index === 0 ? renderBadge("الإجراء المختار", "success") : renderBadge(`التقييم ${offer.net_value_score}`, "")}
           </header>
-          <p>${escapeHtml(offer.action)}</p>
-          <p class="arabic" dir="rtl">${escapeHtml(offer.action_ar || "")}</p>
-          <p>Effectiveness: <strong>${escapeHtml(offer.effectiveness_score)}</strong> | Cost: <strong>${money.format(Number(offer.estimated_cost || 0))}</strong></p>
+          <p class="arabic" dir="rtl" style="font-size: 1.1em; margin-bottom: 4px;">${escapeHtml(offer.action_ar || "")}</p>
+          <p style="font-size: 0.85em; color: var(--muted);">${escapeHtml(offer.action)}</p>
+          <p>الفعالية: <strong>${escapeHtml(offer.effectiveness_score)}</strong> | التكلفة: <strong dir="ltr">${money.format(Number(offer.estimated_cost || 0))}</strong></p>
         </article>
       `).join("")}
     </div>
@@ -153,18 +153,11 @@ function renderLlamaReport(report = {}) {
   const english = report.english || {};
   const arabic = report.arabic || {};
   const sections = [
-    ["Churn Risk Summary", "churn_risk_summary"],
-    ["Behavioral Diagnosis", "behavioral_diagnosis"],
-    ["Root Causes Ranked", "root_causes_ranked"],
-    ["Recommended Rescue Strategy", "recommended_rescue_strategy"],
-    ["Empathy Guidance", "empathy_guidance"],
-    ["Suggested Agent Script", "suggested_agent_script"],
-    ["Executive Takeaway", "executive_takeaway"],
-    ["Retention Priority Analysis", "retention_priority_analysis"],
-    ["Behavioral Trend Interpretation", "behavioral_trend_interpretation"],
-    ["Business Risk Framing", "business_risk_framing"],
-    ["Intervention Confidence", "intervention_confidence"],
-    ["Communication Strategy", "communication_strategy"],
+    ["الملخص التنفيذي للأعمال", "executive_summary"],
+    ["الأسباب الجذرية لخطر الإلغاء", "key_drivers"],
+    ["التأثير المالي والإيرادات", "revenue_impact"],
+    ["خطة العمل الاستراتيجية", "action_plan"],
+    ["مسودة التخاطب مع العميل", "agent_script"]
   ];
   return `
     <div class="llama-report">
@@ -175,9 +168,9 @@ function renderLlamaReport(report = {}) {
         if (!enValue && !arValue) return "";
         return `
           <article class="llama-section">
-            <h4>${escapeHtml(title)}</h4>
-            <p class="arabic" dir="rtl">${escapeHtml(arValue || "")}</p>
-            <p>${escapeHtml(enValue || "")}</p>
+            <h4 class="arabic" dir="rtl" style="margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 4px;">${escapeHtml(title)}</h4>
+            <p class="arabic" dir="rtl" style="font-size: 1.1em; line-height: 1.7; margin-bottom: 8px;">${escapeHtml(arValue || "")}</p>
+            <p style="font-size: 0.85em; color: var(--muted);">${escapeHtml(enValue || "")}</p>
           </article>
         `;
       }).join("")}
@@ -225,25 +218,25 @@ function createChart(id, config) {
 
 function renderKpis(overview) {
   const cards = [
-    ["Total Customers", fmt.format(overview.total_customers), "Saved tested/uploaded customers", ""],
-    ["Low Risk", fmt.format(overview.low_risk_users), "Risk below 40%", "success"],
-    ["Medium Risk", fmt.format(overview.medium_risk_users), "Risk from 40% to 63.99%", "warning"],
-    ["High Risk", fmt.format(overview.high_risk_band_users), "Risk from 64% to 84.99%", "critical"],
-    ["Critical Risk", fmt.format(overview.critical_risk_users), "Risk at 85% or higher", "critical"],
-    ["Revenue at Risk", money.format(overview.revenue_at_risk), "Projected exposed revenue", "critical"],
-    ["VIP Customers", fmt.format(overview.vip_customers), "Premium monitored accounts", ""],
-    ["Average Churn", `${overview.average_churn}%`, "Blended risk score", ""],
-    ["AI Interventions", fmt.format(overview.ai_interventions_triggered), "Triggered workflows", ""],
-    ["Retention Success", `${overview.retention_success_rate}%`, "Modeled retention health", "success"],
+    ["إجمالي العملاء", fmt.format(overview.total_customers), "العملاء المحفوظون", ""],
+    ["مخاطر منخفضة", fmt.format(overview.low_risk_users), "المخاطرة أقل من 40%", "success"],
+    ["مخاطر متوسطة", fmt.format(overview.medium_risk_users), "المخاطرة من 40% إلى 63.99%", "warning"],
+    ["مخاطر عالية", fmt.format(overview.high_risk_band_users), "المخاطرة من 64% إلى 84.99%", "critical"],
+    ["مخاطر حرجة", fmt.format(overview.critical_risk_users), "المخاطرة 85% أو أعلى", "critical"],
+    ["الإيرادات المعرضة للخطر", money.format(overview.revenue_at_risk), "الإيرادات المتوقع فقدانها", "critical"],
+    ["عملاء VIP", fmt.format(overview.vip_customers), "الحسابات المميزة المراقبة", ""],
+    ["متوسط التسرب", `${overview.average_churn}%`, "نقاط المخاطرة المدمجة", ""],
+    ["تدخلات الذكاء الاصطناعي", fmt.format(overview.ai_interventions_triggered), "سير العمل المفعّل", ""],
+    ["نجاح الاحتفاظ", `${overview.retention_success_rate}%`, "الصحة النموذجية للاحتفاظ", "success"],
   ];
   $("kpiGrid").innerHTML = cards.map(([label, value, hint, tone]) => `
     <article class="kpi-card ${tone}">
       <span>${label}</span>
-      <strong>${value}</strong>
+      <strong dir="ltr">${value}</strong>
       <small>${hint}</small>
     </article>
   `).join("");
-  $("modelStatus").textContent = overview.model_status === "online" ? "Model online" : "Model offline";
+  $("modelStatus").textContent = overview.model_status === "online" ? "النموذج متصل" : "النموذج غير متصل";
 }
 
 function renderOverviewCharts(analytics) {
@@ -261,8 +254,8 @@ function renderOverviewCharts(analytics) {
     data: {
       labels: analytics.monthly_retention_trends.map((item) => item.month),
       datasets: [
-        { label: "Retention", data: analytics.monthly_retention_trends.map((item) => item.retention), borderColor: c.green, backgroundColor: "rgba(52, 211, 153, 0.12)", fill: true, tension: 0.35 },
-        { label: "Risk", data: analytics.monthly_retention_trends.map((item) => item.risk), borderColor: c.red, backgroundColor: "rgba(251, 113, 133, 0.08)", tension: 0.35 },
+        { label: "الاحتفاظ", data: analytics.monthly_retention_trends.map((item) => item.retention), borderColor: c.green, backgroundColor: "rgba(52, 211, 153, 0.12)", fill: true, tension: 0.35 },
+        { label: "المخاطرة", data: analytics.monthly_retention_trends.map((item) => item.risk), borderColor: c.red, backgroundColor: "rgba(251, 113, 133, 0.08)", tension: 0.35 },
       ],
     },
   });
@@ -270,7 +263,7 @@ function renderOverviewCharts(analytics) {
     type: "bar",
     data: {
       labels: Object.keys(analytics.revenue_impact),
-      datasets: [{ label: "Revenue", data: Object.values(analytics.revenue_impact), backgroundColor: [c.green, c.yellow, c.red], borderRadius: 8 }],
+      datasets: [{ label: "الإيرادات", data: Object.values(analytics.revenue_impact), backgroundColor: [c.green, c.yellow, c.red], borderRadius: 8 }],
     },
   });
   createChart("actionChart", {
@@ -286,8 +279,8 @@ function renderOverviewCharts(analytics) {
     data: {
       labels: analytics.customer_segmentation.map((item) => item.segment),
       datasets: [
-        { label: "Customers", data: analytics.customer_segmentation.map((item) => item.count), backgroundColor: c.blue, borderRadius: 8 },
-        { label: "Avg risk", data: analytics.customer_segmentation.map((item) => item.avg_risk), backgroundColor: c.red, borderRadius: 8 },
+        { label: "العملاء", data: analytics.customer_segmentation.map((item) => item.count), backgroundColor: c.blue, borderRadius: 8 },
+        { label: "متوسط المخاطرة", data: analytics.customer_segmentation.map((item) => item.avg_risk), backgroundColor: c.red, borderRadius: 8 },
       ],
     },
   });
@@ -304,7 +297,7 @@ function renderOverviewCharts(analytics) {
 
 function renderHeatmap(rows) {
   if (!rows.length) {
-    $("riskHeatmap").innerHTML = `<div class="table-loading">No segment data yet.</div>`;
+    $("riskHeatmap").innerHTML = `<div class="table-loading">لا تتوفر بيانات للشرائح حتى الآن.</div>`;
     return;
   }
   const maxValue = Math.max(...rows.flatMap((row) => [row.low, row.medium, row.high, row.critical]));
@@ -344,13 +337,13 @@ function customerQuery() {
 }
 
 async function loadCustomers() {
-  $("customersBody").innerHTML = `<tr><td colspan="11"><div class="table-loading">Loading customers...</div></td></tr>`;
+  $("customersBody").innerHTML = `<tr><td colspan="11"><div class="table-loading">جاري تحميل العملاء...</div></td></tr>`;
   const data = await api(customerQuery());
   if (!data.items.length) {
     $("customersBody").innerHTML = `
-      <tr><td colspan="11"><div class="table-loading">No saved customers yet. Analyze one customer or upload a CSV file to populate this dashboard.</div></td></tr>
+      <tr><td colspan="11"><div class="table-loading">لا يوجد عملاء محفوظون حتى الآن. قم بتحليل عميل واحد أو ارفع ملف CSV لملء هذه اللوحة.</div></td></tr>
     `;
-    $("paginationText").textContent = `Page ${data.page} of ${data.pages} | ${fmt.format(data.total)} customers`;
+    $("paginationText").textContent = `الصفحة ${data.page} من ${data.pages} | ${fmt.format(data.total)} عميل`;
     $("prevPage").disabled = true;
     $("nextPage").disabled = true;
     return;
@@ -362,18 +355,18 @@ async function loadCustomers() {
         <td><strong>${escapeHtml(row.customer_id)}</strong></td>
         <td>${row.risk.toFixed(2)}<div class="risk-bar ${tone}" style="--value:${row.risk}%"><span></span></div></td>
         <td>${renderBadge(row.vip_status, row.vip_status === "VIP" ? "success" : "")}</td>
-        <td>${money.format(row.revenue)}</td>
-        <td>${fmt.format(row.tenure)}d</td>
-        <td>${(row.cancel_rate * 100).toFixed(1)}%</td>
+        <td dir="ltr">${money.format(row.revenue)}</td>
+        <td dir="ltr">${fmt.format(row.tenure)} يوم</td>
+        <td dir="ltr">${(row.cancel_rate * 100).toFixed(1)}%</td>
         <td>${escapeHtml(row.retention_status)}</td>
         <td>${escapeHtml(row.ai_decision.replaceAll("_", " "))}</td>
         <td>${renderBadge(`${row.priority} ${row.priority_score}`, tone === "critical" ? "danger" : tone === "high" ? "warning" : "")}</td>
-        <td>${new Date(row.last_activity).toLocaleDateString()}</td>
-        <td><button class="small-button danger-action" type="button" data-delete-customer="${escapeHtml(row.customer_id)}" aria-label="Delete ${escapeHtml(row.customer_id)}"><i data-lucide="trash-2"></i></button></td>
+        <td dir="ltr">${new Date(row.last_activity).toLocaleDateString()}</td>
+        <td><button class="small-button danger-action" type="button" data-delete-customer="${escapeHtml(row.customer_id)}" aria-label="حذف ${escapeHtml(row.customer_id)}"><i data-lucide="trash-2"></i></button></td>
       </tr>
     `;
   }).join("");
-  $("paginationText").textContent = `Page ${data.page} of ${data.pages} | ${fmt.format(data.total)} customers`;
+  $("paginationText").textContent = `الصفحة ${data.page} من ${data.pages} | ${fmt.format(data.total)} عميل`;
   $("prevPage").disabled = data.page <= 1;
   $("nextPage").disabled = data.page >= data.pages;
   runIcons();
@@ -385,56 +378,57 @@ function renderInsights(analysis, meta = {}) {
   return `
     <div class="insights-head">
       <div>
-        <p class="eyebrow">Structured LLM Result</p>
-        <h2>Executive Summary</h2>
-        <p>${escapeHtml(analysis.summary)}</p>
+        <p class="eyebrow">نتائج نموذج اللغة المنظمة</p>
+        <h2>الملخص التنفيذي</h2>
+        <p class="arabic" dir="rtl">${escapeHtml(analysis.summary_ar || "")}</p>
+        <p style="font-size: 0.85em; color: var(--muted);">${escapeHtml(analysis.summary)}</p>
         ${renderBadge(analysis.risk_level, tone === "critical" ? "danger" : tone === "high" ? "warning" : "success")}
       </div>
       <div class="score-ring" style="--score:${Number(meta.risk || analysis.priority_score)};--risk-color:${riskColor}">
-        <div><strong>${Number(meta.risk || analysis.priority_score).toFixed(0)}%</strong><span>risk score</span></div>
+        <div><strong>${Number(meta.risk || analysis.priority_score).toFixed(0)}%</strong><span>درجة المخاطرة</span></div>
       </div>
     </div>
 
     <div class="insight-grid">
-      <div class="mini-card"><span>Priority Score</span><strong>${analysis.priority_score}</strong></div>
-      <div class="mini-card"><span>AI Confidence</span><strong>${analysis.ai_confidence_score}%</strong></div>
-      <div class="mini-card"><span>Sentiment</span><strong>${escapeHtml(analysis.customer_sentiment)}</strong></div>
-      <div class="mini-card"><span>Human Intervention</span><strong>${analysis.human_intervention_required ? "Required" : "Not required"}</strong></div>
-      <div class="mini-card"><span>Next Best Action</span>${renderBilingualValue(analysis.next_best_action, analysis.next_best_action_ar)}</div>
-      <div class="mini-card"><span>Personalized Offer</span>${renderBilingualValue(analysis.personalized_offer, analysis.personalized_offer_ar)}</div>
+      <div class="mini-card"><span>درجة الأولوية</span><strong>${analysis.priority_score}</strong></div>
+      <div class="mini-card"><span>ثقة الذكاء الاصطناعي</span><strong>${analysis.ai_confidence_score}%</strong></div>
+      <div class="mini-card"><span>الانطباع</span>${renderBilingualValue(analysis.customer_sentiment, analysis.customer_sentiment_ar)}</div>
+      <div class="mini-card"><span>التدخل البشري</span><strong>${analysis.human_intervention_required ? "مطلوب" : "غير مطلوب"}</strong></div>
+      <div class="mini-card"><span>الإجراء الأفضل التالي</span>${renderBilingualValue(analysis.next_best_action, analysis.next_best_action_ar)}</div>
+      <div class="mini-card"><span>عرض مخصص</span>${renderBilingualValue(analysis.personalized_offer, analysis.personalized_offer_ar)}</div>
     </div>
 
     <details class="collapsible" open>
-      <summary>Root Causes | الأسباب الرئيسية</summary>
+      <summary>الأسباب الرئيسية | Root Causes</summary>
       <div class="collapsible-content"><ul class="bullet-list">${renderBilingualList(analysis.main_reasons, analysis.main_reasons_ar)}</ul></div>
     </details>
     <details class="collapsible" open>
-      <summary>AI Recommendations | توصيات الذكاء الاصطناعي</summary>
+      <summary>توصيات الذكاء الاصطناعي | AI Recommendations</summary>
       <div class="collapsible-content"><ul class="bullet-list">${renderBilingualList(analysis.recommended_actions, analysis.recommended_actions_ar)}</ul></div>
     </details>
     <details class="collapsible" open>
-      <summary>Retention Strategy | استراتيجية الاحتفاظ</summary>
+      <summary>استراتيجية الاحتفاظ | Retention Strategy</summary>
       <div class="collapsible-content">
-        <p>${escapeHtml(analysis.retention_strategy)}</p>
         <p class="arabic strategy-ar" dir="rtl">${escapeHtml(analysis.retention_strategy_ar || "")}</p>
+        <p style="font-size: 0.85em; color: var(--muted); margin-top: 10px;">${escapeHtml(analysis.retention_strategy)}</p>
       </div>
     </details>
     <details class="collapsible" open>
-      <summary>Action Timeline | الجدول الزمني للإجراءات</summary>
+      <summary>الجدول الزمني للإجراءات | Action Timeline</summary>
       <div class="collapsible-content timeline">
         ${renderBilingualTimeline(analysis.timeline, analysis.timeline_ar)}
       </div>
     </details>
     <details class="collapsible" open>
-      <summary>Feature Effects | XGBoost SHAP</summary>
+      <summary>تأثير الميزات | XGBoost SHAP</summary>
       <div class="collapsible-content">${renderFeatureEffects(analysis.feature_effects)}</div>
     </details>
     <details class="collapsible" open>
-      <summary>Next Best Action Ranking | NBA</summary>
+      <summary>تصنيف الإجراء الأفضل | NBA</summary>
       <div class="collapsible-content">${renderNbaRecommendation(analysis.nba_recommendation)}</div>
     </details>
     <details class="collapsible" open>
-      <summary>LLaMA Strategy Report | Groq</summary>
+      <summary>تقرير استراتيجية LLaMA | Groq</summary>
       <div class="collapsible-content">${renderLlamaReport(analysis.llama_report)}</div>
     </details>
   `;
@@ -456,7 +450,7 @@ async function analyzeCustomer(event) {
   event.preventDefault();
   const button = $("analyzeBtn");
   button.disabled = true;
-  button.querySelector("span").textContent = "Analyzing...";
+  button.querySelector("span").textContent = "جاري التحليل...";
   $("insightsPanel").innerHTML = `<div class="empty-state skeleton"></div>`;
   try {
     const result = await api(`/api/v1/analyze-risk?use_llm=${$("useLlama").checked ? "true" : "false"}`, {
@@ -471,9 +465,9 @@ async function analyzeCustomer(event) {
       <div class="advanced-analysis-cta" style="margin-top:16px;text-align:center;">
         <button class="primary-button" id="advancedAnalysisBtn" type="button" style="max-width:420px;margin:0 auto;">
           <i data-lucide="brain-circuit"></i>
-          <span>Run Advanced AI Analysis (SHAP + LLaMA)</span>
+          <span>تشغيل التحليل المتقدم (SHAP + LLaMA)</span>
         </button>
-        <p style="margin:8px 0 0;font-size:12px;color:var(--muted);">Runs real SHAP explainability + Groq LLaMA deep reasoning</p>
+        <p style="margin:8px 0 0;font-size:12px;color:var(--muted);">تشغيل توضيح SHAP الفعلي + استنتاج Groq LLaMA العميق</p>
       </div>
     `;
     runIcons();
@@ -482,12 +476,12 @@ async function analyzeCustomer(event) {
       advBtn.addEventListener("click", () => runAdvancedAnalysis(readPredictionPayload()));
     }
     await Promise.all([loadOverview(), loadCustomers(), loadRealtime()]);
-    toast(`Structured analysis ready for ${result.customer_id}`);
+    toast(`التحليل المنظم جاهز لـ ${result.customer_id}`);
   } catch (error) {
-    $("insightsPanel").innerHTML = `<div class="empty-state"><h2>Analysis failed</h2><p>${escapeHtml(error.message)}</p></div>`;
+    $("insightsPanel").innerHTML = `<div class="empty-state"><h2>فشل التحليل</h2><p>${escapeHtml(error.message)}</p></div>`;
   } finally {
     button.disabled = false;
-    button.querySelector("span").textContent = "Analyze Customer";
+    button.querySelector("span").textContent = "تحليل العميل";
     runIcons();
   }
 }
@@ -496,7 +490,7 @@ async function runAdvancedAnalysis(payload) {
   const advBtn = $("advancedAnalysisBtn");
   if (advBtn) {
     advBtn.disabled = true;
-    advBtn.querySelector("span").textContent = "Running SHAP + LLaMA...";
+    advBtn.querySelector("span").textContent = "جاري تشغيل SHAP + LLaMA...";
   }
   try {
     const result = await api("/api/v1/analyze-risk-detailed", {
@@ -505,20 +499,20 @@ async function runAdvancedAnalysis(payload) {
     });
     $("insightsPanel").innerHTML = `
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-        ${renderBadge("SHAP: " + (result.shap_available ? "Active" : "Fallback"), result.shap_available ? "success" : "warning")}
-        ${renderBadge("LLM: " + (result.llm_source || "unknown"), result.llm_source === "groq_llama" ? "success" : "warning")}
+        ${renderBadge("SHAP: " + (result.shap_available ? "نشط" : "احتياطي"), result.shap_available ? "success" : "warning")}
+        ${renderBadge("LLM: " + (result.llm_source || "غير معروف"), result.llm_source === "groq_llama" ? "success" : "warning")}
       </div>
     ` + renderInsights(result.llm_analysis, {
       risk: result.churn_risk_percentage,
       priority: result.priority,
     });
     await Promise.all([loadOverview(), loadCustomers(), loadRealtime()]);
-    toast(`Advanced AI analysis complete for ${result.customer_id}`);
+    toast(`اكتمل التحليل المتقدم للذكاء الاصطناعي لـ ${result.customer_id}`);
   } catch (error) {
-    toast("Advanced analysis failed: " + error.message);
+    toast("فشل التحليل المتقدم: " + error.message);
     if (advBtn) {
       advBtn.disabled = false;
-      advBtn.querySelector("span").textContent = "Run Advanced AI Analysis (SHAP + LLaMA)";
+      advBtn.querySelector("span").textContent = "تشغيل التحليل المتقدم (SHAP + LLaMA)";
     }
   }
   runIcons();
@@ -536,38 +530,42 @@ function readCsvFile(file) {
 async function uploadCsvCustomers() {
   const file = $("csvFileInput").files[0];
   if (!file) {
-    toast("Choose a CSV file first");
+    toast("اختر ملف CSV أولاً");
     return;
   }
   const button = $("uploadCsvBtn");
-  button.disabled = true;
-  button.querySelector("span").textContent = "Analyzing CSV...";
-  $("csvUploadStatus").textContent = "Reading and scoring CSV rows...";
+  if(button) {
+      button.disabled = true;
+      button.querySelector("span").textContent = "جاري تحليل CSV...";
+  }
+  if($("csvUploadStatus")) $("csvUploadStatus").textContent = "جاري قراءة وتقييم صفوف CSV...";
   try {
     const csvText = await readCsvFile(file);
     const result = await api("/api/v1/customers/upload-csv", {
       method: "POST",
       body: JSON.stringify({ csv_text: csvText }),
     });
-    $("csvUploadStatus").textContent = `Imported ${result.imported} customers. ${result.errors.length ? `${result.errors.length} rows skipped.` : "No row errors."}`;
+    if($("csvUploadStatus")) $("csvUploadStatus").textContent = `تم استيراد ${result.imported} عميل. ${result.errors.length ? `تم تخطي ${result.errors.length} صف.` : "لا توجد أخطاء في الصفوف."}`;
     await Promise.all([loadOverview(), loadCustomers(), loadRealtime()]);
-    toast(`CSV analysis complete: ${result.imported} customers saved`);
+    toast(`اكتمل تحليل CSV: تم حفظ ${result.imported} عميل`);
   } catch (error) {
-    $("csvUploadStatus").textContent = error.message;
-    toast("CSV upload failed");
+    if($("csvUploadStatus")) $("csvUploadStatus").textContent = error.message;
+    toast("فشل رفع CSV");
   } finally {
-    button.disabled = false;
-    button.querySelector("span").textContent = "Analyze CSV";
+    if(button) {
+        button.disabled = false;
+        button.querySelector("span").textContent = "تحليل CSV";
+    }
     runIcons();
   }
 }
 
 async function deleteCustomer(customerId) {
-  if (!confirm(`Remove ${customerId} from saved dashboard data?`)) return;
+  if (!confirm(`هل تريد إزالة ${customerId} من بيانات اللوحة المحفوظة؟`)) return;
   await api(`/api/v1/customer/${encodeURIComponent(customerId)}`, { method: "DELETE" });
   closeDrawer();
   await Promise.all([loadOverview(), loadCustomers(), loadRealtime()]);
-  toast(`${customerId} removed`);
+  toast(`تم إزالة ${customerId}`);
 }
 
 async function openCustomer(customerId) {
@@ -580,28 +578,28 @@ async function openCustomer(customerId) {
     $("drawerContent").innerHTML = `
       <section class="panel">
         <div class="panel-header">
-          <div><h2>Profile Analytics</h2><p>Saved data for this analyzed customer.</p></div>
+          <div><h2>تحليلات الملف الشخصي</h2><p>البيانات المحفوظة لهذا العميل.</p></div>
           <div class="report-actions">
-            <button class="small-button" type="button" data-print-customer="${escapeHtml(customer.customer_id)}" aria-label="Save ${escapeHtml(customer.customer_id)} PDF"><i data-lucide="file-down"></i></button>
-            <button class="small-button danger-action" type="button" data-delete-customer="${escapeHtml(customer.customer_id)}" aria-label="Delete ${escapeHtml(customer.customer_id)}"><i data-lucide="trash-2"></i></button>
+            <button class="small-button" type="button" data-print-customer="${escapeHtml(customer.customer_id)}" aria-label="حفظ PDF ${escapeHtml(customer.customer_id)}"><i data-lucide="file-down"></i></button>
+            <button class="small-button danger-action" type="button" data-delete-customer="${escapeHtml(customer.customer_id)}" aria-label="حذف ${escapeHtml(customer.customer_id)}"><i data-lucide="trash-2"></i></button>
           </div>
         </div>
         <div class="insight-grid">
-          <div class="mini-card"><span>Revenue</span><strong>${money.format(customer.revenue)}</strong></div>
-          <div class="mini-card"><span>Tenure</span><strong>${fmt.format(customer.tenure)}d</strong></div>
-          <div class="mini-card"><span>Cancel Rate</span><strong>${(customer.cancel_rate * 100).toFixed(1)}%</strong></div>
-          <div class="mini-card"><span>Segment</span><strong>${escapeHtml(customer.segment)}</strong></div>
-          <div class="mini-card"><span>AI Decision</span><strong>${escapeHtml(customer.ai_decision.replaceAll("_", " "))}</strong></div>
-          <div class="mini-card"><span>Status</span><strong>${escapeHtml(customer.retention_status)}</strong></div>
+          <div class="mini-card"><span>الإيرادات</span><strong dir="ltr">${money.format(customer.revenue)}</strong></div>
+          <div class="mini-card"><span>مدة الاشتراك</span><strong dir="ltr">${fmt.format(customer.tenure)} يوم</strong></div>
+          <div class="mini-card"><span>معدل الإلغاء</span><strong dir="ltr">${(customer.cancel_rate * 100).toFixed(1)}%</strong></div>
+          <div class="mini-card"><span>الشريحة</span><strong>${escapeHtml(customer.segment)}</strong></div>
+          <div class="mini-card"><span>قرار الذكاء الاصطناعي</span><strong>${escapeHtml(customer.ai_decision.replaceAll("_", " "))}</strong></div>
+          <div class="mini-card"><span>الحالة</span><strong>${escapeHtml(customer.retention_status)}</strong></div>
         </div>
         <div class="chart-wrap"><canvas id="detailTrendChart"></canvas></div>
       </section>
       <section class="panel">${renderInsights(customer.llm_analysis, { risk: customer.risk, priority: customer.priority })}</section>
       <section class="panel">
-        <div class="panel-header"><div><h2>Action History</h2><p>Recent workflow and model events.</p></div></div>
+        <div class="panel-header"><div><h2>سجل الإجراءات</h2><p>أحداث سير العمل والنموذج الأخيرة.</p></div></div>
         <div class="timeline">
           ${customer.action_history.map((item) => `
-            <div class="timeline-item"><strong>${escapeHtml(item.event)}</strong><span>${escapeHtml(item.owner)} | ${new Date(item.timestamp).toLocaleString()}</span></div>
+            <div class="timeline-item"><strong>${escapeHtml(item.event)}</strong><span>${escapeHtml(item.owner)} | <span dir="ltr">${new Date(item.timestamp).toLocaleString()}</span></span></div>
           `).join("")}
         </div>
       </section>
@@ -619,7 +617,7 @@ async function openCustomer(customerId) {
       });
     }
   } catch (error) {
-    $("drawerContent").innerHTML = `<div class="empty-state"><h2>Unable to load customer</h2><p>${escapeHtml(error.message)}</p></div>`;
+    $("drawerContent").innerHTML = `<div class="empty-state"><h2>تعذر تحميل العميل</h2><p>${escapeHtml(error.message)}</p></div>`;
   }
   runIcons();
 }
@@ -632,12 +630,12 @@ function closeDrawer() {
 function reportShell(title, body) {
   return `
     <!doctype html>
-    <html>
+    <html lang="ar" dir="rtl">
     <head>
       <meta charset="utf-8" />
       <title>${escapeHtml(title)}</title>
       <style>
-        body { font-family: Arial, sans-serif; margin: 32px; color: #111827; line-height: 1.5; }
+        body { font-family: Tajawal, Arial, sans-serif; margin: 32px; color: #111827; line-height: 1.5; direction: rtl; text-align: right; }
         h1 { margin: 0 0 8px; font-size: 28px; }
         h2 { margin-top: 24px; border-bottom: 1px solid #d1d5db; padding-bottom: 6px; }
         h3 { margin-bottom: 6px; }
@@ -645,17 +643,17 @@ function reportShell(title, body) {
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .card, .section { border: 1px solid #d1d5db; border-radius: 8px; padding: 12px; margin: 10px 0; }
         .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #e0f2fe; color: #075985; font-weight: 700; }
-        .arabic { direction: rtl; text-align: right; font-family: Arial, sans-serif; }
+        .arabic { direction: rtl; text-align: right; font-family: Tajawal, Arial, sans-serif; }
         table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
+        th, td { border: 1px solid #d1d5db; padding: 8px; text-align: right; }
         th { background: #f8fafc; }
         @media print { button { display: none; } body { margin: 18mm; } }
       </style>
     </head>
     <body>
-      <button onclick="window.print()">Save as PDF</button>
+      <button onclick="window.print()">حفظ كـ PDF</button>
       <h1>${escapeHtml(title)}</h1>
-      <div class="meta">Generated ${new Date().toLocaleString()} from Retention AI Command Center</div>
+      <div class="meta" dir="ltr" style="text-align: right;">تم الإنشاء في ${new Date().toLocaleString()} من مركز القيادة</div>
       ${body}
       <script>setTimeout(() => window.print(), 350);</script>
     </body>
@@ -666,7 +664,7 @@ function reportShell(title, body) {
 function openPrintWindow(title, body) {
   const win = window.open("", "_blank");
   if (!win) {
-    toast("Allow popups to save PDF reports");
+    toast("يرجى السماح بالنوافذ المنبثقة لحفظ تقارير PDF");
     return;
   }
   win.document.open();
@@ -682,24 +680,24 @@ async function saveOverviewPdf() {
   ]);
   const body = `
     <section class="grid">
-      <div class="card"><strong>Total Customers</strong><br>${fmt.format(overview.total_customers)}</div>
-      <div class="card"><strong>Low Risk</strong><br>${fmt.format(overview.low_risk_users)}</div>
-      <div class="card"><strong>Medium Risk</strong><br>${fmt.format(overview.medium_risk_users)}</div>
-      <div class="card"><strong>High Risk</strong><br>${fmt.format(overview.high_risk_band_users)}</div>
-      <div class="card"><strong>Critical Risk</strong><br>${fmt.format(overview.critical_risk_users)}</div>
-      <div class="card"><strong>Revenue at Risk</strong><br>${money.format(overview.revenue_at_risk)}</div>
+      <div class="card"><strong>إجمالي العملاء</strong><br>${fmt.format(overview.total_customers)}</div>
+      <div class="card"><strong>مخاطر منخفضة</strong><br>${fmt.format(overview.low_risk_users)}</div>
+      <div class="card"><strong>مخاطر متوسطة</strong><br>${fmt.format(overview.medium_risk_users)}</div>
+      <div class="card"><strong>مخاطر عالية</strong><br>${fmt.format(overview.high_risk_band_users)}</div>
+      <div class="card"><strong>مخاطر حرجة</strong><br>${fmt.format(overview.critical_risk_users)}</div>
+      <div class="card"><strong>الإيرادات المعرضة للخطر</strong><br><span dir="ltr">${money.format(overview.revenue_at_risk)}</span></div>
     </section>
-    <h2>Risk Distribution</h2>
+    <h2>توزيع المخاطر</h2>
     <table><tbody>${Object.entries(analytics.churn_distribution).map(([key, value]) => `<tr><th>${escapeHtml(key)}</th><td>${fmt.format(value)}</td></tr>`).join("")}</tbody></table>
-    <h2>Top Risk Customers</h2>
+    <h2>أكثر العملاء عرضة للخطر</h2>
     <table>
-      <thead><tr><th>Customer</th><th>Risk</th><th>Priority</th><th>Decision</th><th>Revenue</th></tr></thead>
-      <tbody>${customers.items.map((row) => `<tr><td>${escapeHtml(row.customer_id)}</td><td>${row.risk}%</td><td>${escapeHtml(row.priority)}</td><td>${escapeHtml(row.ai_decision)}</td><td>${money.format(row.revenue)}</td></tr>`).join("")}</tbody>
+      <thead><tr><th>العميل</th><th>الخطر</th><th>الأولوية</th><th>القرار</th><th>الإيرادات</th></tr></thead>
+      <tbody>${customers.items.map((row) => `<tr><td>${escapeHtml(row.customer_id)}</td><td>${row.risk}%</td><td>${escapeHtml(row.priority)}</td><td>${escapeHtml(row.ai_decision)}</td><td dir="ltr">${money.format(row.revenue)}</td></tr>`).join("")}</tbody>
     </table>
-    <h2>Executive Notes</h2>
-    <p>This overview is based only on customers saved through manual analysis or CSV upload.</p>
+    <h2>ملاحظات تنفيذية</h2>
+    <p>تستند هذه النظرة العامة فقط إلى العملاء المحفوظين من خلال التحليل اليدوي أو رفع CSV.</p>
   `;
-  openPrintWindow("AI Risk Operations Overview Report", body);
+  openPrintWindow("تقرير نظرة عامة لعمليات مخاطر الذكاء الاصطناعي", body);
 }
 
 async function saveCustomerPdf(customerId) {
@@ -710,44 +708,44 @@ async function saveCustomerPdf(customerId) {
   const ar = report.arabic || {};
   const body = `
     <section class="grid">
-      <div class="card"><strong>Risk</strong><br>${customer.risk}%</div>
-      <div class="card"><strong>Priority</strong><br>${escapeHtml(customer.priority)}</div>
-      <div class="card"><strong>Revenue</strong><br>${money.format(customer.revenue)}</div>
+      <div class="card"><strong>الخطر</strong><br>${customer.risk}%</div>
+      <div class="card"><strong>الأولوية</strong><br>${escapeHtml(customer.priority)}</div>
+      <div class="card"><strong>الإيرادات</strong><br><span dir="ltr">${money.format(customer.revenue)}</span></div>
       <div class="card"><strong>VIP</strong><br>${escapeHtml(customer.vip_status)}</div>
-      <div class="card"><strong>Cancel Rate</strong><br>${(customer.cancel_rate * 100).toFixed(1)}%</div>
-      <div class="card"><strong>AI Decision</strong><br>${escapeHtml(customer.ai_decision)}</div>
+      <div class="card"><strong>معدل الإلغاء</strong><br>${(customer.cancel_rate * 100).toFixed(1)}%</div>
+      <div class="card"><strong>قرار الذكاء الاصطناعي</strong><br>${escapeHtml(customer.ai_decision)}</div>
     </section>
-    <h2>Next Best Action</h2>
+    <h2>الإجراء الأفضل التالي</h2>
     <div class="section">
-      <p>${escapeHtml(analysis.next_best_action)}</p>
       <p class="arabic">${escapeHtml(analysis.next_best_action_ar || "")}</p>
+      <p style="font-size: 0.85em; color: var(--muted);">${escapeHtml(analysis.next_best_action)}</p>
     </div>
-    <h2>Feature Effects</h2>
+    <h2>تأثير الميزات</h2>
     ${renderFeatureEffects(analysis.feature_effects || customer.feature_effects || [])}
-    <h2>NBA Offer Ranking</h2>
+    <h2>تصنيف الإجراء الأفضل (NBA)</h2>
     ${renderNbaRecommendation(analysis.nba_recommendation || customer.nba_recommendation || {})}
-    <h2>LLaMA Retention Report</h2>
-    <div class="section"><h3>Arabic</h3><p class="arabic">${escapeHtml(ar.churn_risk_summary || "")}</p><p class="arabic">${escapeHtml(ar.behavioral_diagnosis || "")}</p></div>
-    <div class="section"><h3>English</h3><p>${escapeHtml(en.churn_risk_summary || "")}</p><p>${escapeHtml(en.behavioral_diagnosis || "")}</p></div>
-    <h2>Timeline</h2>
+    <h2>تقرير الاحتفاظ LLaMA</h2>
+    <div class="section"><h3>عربي</h3><p class="arabic">${escapeHtml(ar.churn_risk_summary || "")}</p><p class="arabic">${escapeHtml(ar.behavioral_diagnosis || "")}</p></div>
+    <div class="section"><h3>إنجليزي</h3><p>${escapeHtml(en.churn_risk_summary || "")}</p><p>${escapeHtml(en.behavioral_diagnosis || "")}</p></div>
+    <h2>الجدول الزمني</h2>
     <table><tbody>${(analysis.timeline || []).map((item) => `<tr><td>${escapeHtml(item.step)}</td><td>${escapeHtml(item.owner)}</td><td>${escapeHtml(item.deadline)}</td></tr>`).join("")}</tbody></table>
   `;
-  openPrintWindow(`Customer Retention Report - ${customer.customer_id}`, body);
+  openPrintWindow(`تقرير الاحتفاظ بالعميل - ${customer.customer_id}`, body);
 }
 
 function renderRealtimeOverview(overview) {
   $("alertList").innerHTML = overview.alerts.length ? overview.alerts.map((alert) => `
     <div class="alert-item">
-      <strong>${escapeHtml(alert.customer_id)} | ${alert.risk.toFixed(2)}%</strong>
+      <strong>${escapeHtml(alert.customer_id)} | <span dir="ltr">${alert.risk.toFixed(2)}%</span></strong>
       <span>${escapeHtml(alert.message)}</span>
     </div>
-  `).join("") : `<div class="alert-item"><strong>No saved high-risk customers</strong><span>Analyze customers or upload a CSV to populate alerts.</span></div>`;
+  `).join("") : `<div class="alert-item"><strong>لا يوجد عملاء ذوي مخاطر عالية محفوظون</strong><span>قم بتحليل العملاء أو رفع CSV لملء التنبيهات.</span></div>`;
   $("activityFeed").innerHTML = overview.activity_feed.length ? overview.activity_feed.map((item) => `
     <div class="activity-item">
       <strong>${escapeHtml(item.message)}</strong>
-      <span>${new Date(item.timestamp).toLocaleString()}</span>
+      <span dir="ltr">${new Date(item.timestamp).toLocaleString()}</span>
     </div>
-  `).join("") : `<div class="activity-item"><strong>No activity yet</strong><span>Saved analyses will appear here.</span></div>`;
+  `).join("") : `<div class="activity-item"><strong>لا يوجد نشاط بعد</strong><span>التحليلات المحفوظة ستظهر هنا.</span></div>`;
 }
 
 async function loadRealtime() {
@@ -787,7 +785,7 @@ function bindEvents() {
 
   $("refreshBtn").addEventListener("click", async () => {
     await Promise.all([loadOverview(), loadCustomers(), loadRealtime()]);
-    toast("Dashboard refreshed");
+    toast("تم تحديث اللوحة");
   });
   $("overviewPdfBtn").addEventListener("click", () => {
     saveOverviewPdf().catch((error) => toast(error.message));
@@ -816,13 +814,13 @@ function bindEvents() {
         const reader = new FileReader();
         reader.onload = (evt) => {
           csvFiles[mode] = evt.target.result;
-          toast(`File "${file.name}" ready for ${mode} mode`);
+          toast(`الملف "${file.name}" جاهز لوضع ${mode}`);
           const span = dropzone.querySelector('span');
           if (span) span.textContent = `✓ ${file.name}`;
         };
         reader.readAsText(file);
       } else {
-        toast("Please drop a valid .csv file");
+        toast("يرجى سحب ملف .csv صالح");
       }
     });
   });
@@ -979,11 +977,11 @@ function showCsvSuccess(msg) {
 // Upload and score
 async function uploadCsv(mode) {
   const csvText = csvFiles[mode];
-  if (!csvText) { alert('Please select a CSV file first.'); return; }
+  if (!csvText) { alert('يرجى اختيار ملف CSV أولاً.'); return; }
 
   const loadingMsg = mode === 'raw'
-    ? 'Engineering features from transactions...'
-    : 'Scoring customers...';
+    ? 'جاري هندسة الميزات من العمليات...'
+    : 'جاري تقييم العملاء...';
   showCsvLoading(loadingMsg);
 
   try {
@@ -997,9 +995,9 @@ async function uploadCsv(mode) {
 
     if (!res.ok) {
       if (data.error === 'missing_columns') {
-        showCsvError(`Missing columns: ${data.missing.join(', ')}`, data.hint);
+        showCsvError(`أعمدة مفقودة: ${data.missing.join(', ')}`, data.hint);
       } else {
-        showCsvError(data.detail || 'Upload failed');
+        showCsvError(data.detail || 'فشل الرفع');
       }
       return;
     }
@@ -1011,7 +1009,7 @@ async function uploadCsv(mode) {
   }
 }
 
-function renderBatchOverview(data, title = "Batch Analysis Summary") {
+function renderBatchOverview(data, title = "ملخص تحليل الدفعة") {
   const results = data.results || [];
   if (!results.length) return;
 
@@ -1028,35 +1026,35 @@ function renderBatchOverview(data, title = "Batch Analysis Summary") {
       <header class="panel-header" style="margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
         <div>
           <h2 style="color: var(--brand)">${title}</h2>
-          <p>Results from your most recent test (${total} records)</p>
+          <p>نتائج من أحدث اختبار لك (${total} سجلات)</p>
         </div>
-        <span class="badge success">Latest Run</span>
+        <span class="badge success">أحدث تشغيل</span>
       </header>
 
       <div class="kpi-grid" style="grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px;">
         <div class="mini-card" style="padding: 12px;">
-          <span style="font-size: 10px; color: var(--muted); text-transform: uppercase;">Avg. Risk Score</span>
-          <strong style="display: block; margin-top: 4px; font-size: 20px; color: ${avgRisk > 50 ? 'var(--danger)' : 'var(--success)'}">${avgRisk.toFixed(1)}%</strong>
+          <span style="font-size: 10px; color: var(--muted); text-transform: uppercase;">متوسط درجة المخاطرة</span>
+          <strong dir="ltr" style="display: block; margin-top: 4px; font-size: 20px; color: ${avgRisk > 50 ? 'var(--danger)' : 'var(--success)'}">${avgRisk.toFixed(1)}%</strong>
         </div>
         <div class="mini-card" style="padding: 12px;">
-          <span style="font-size: 10px; color: var(--muted); text-transform: uppercase;">High Risk Assets</span>
-          <strong style="display: block; margin-top: 4px; font-size: 20px; color: var(--danger)">${highRiskCount}</strong>
+          <span style="font-size: 10px; color: var(--muted); text-transform: uppercase;">أصول عالية المخاطر</span>
+          <strong dir="ltr" style="display: block; margin-top: 4px; font-size: 20px; color: var(--danger)">${highRiskCount}</strong>
         </div>
         <div class="mini-card" style="padding: 12px;">
-          <span style="font-size: 10px; color: var(--muted); text-transform: uppercase;">Avg. Tenure</span>
-          <strong style="display: block; margin-top: 4px; font-size: 20px;">${Math.round(avgTenure)} Days</strong>
+          <span style="font-size: 10px; color: var(--muted); text-transform: uppercase;">متوسط مدة الاشتراك</span>
+          <strong dir="ltr" style="display: block; margin-top: 4px; font-size: 20px;">${Math.round(avgTenure)} يوم</strong>
         </div>
         <div class="mini-card" style="padding: 12px;">
-          <span style="font-size: 10px; color: var(--muted); text-transform: uppercase;">Total Records</span>
-          <strong style="display: block; margin-top: 4px; font-size: 20px;">${total}</strong>
+          <span style="font-size: 10px; color: var(--muted); text-transform: uppercase;">إجمالي السجلات</span>
+          <strong dir="ltr" style="display: block; margin-top: 4px; font-size: 20px;">${total}</strong>
         </div>
       </div>
 
-      <h3 style="font-size: 13px; margin-bottom: 12px; color: var(--muted); text-transform: uppercase;">Top 3 Riskiest Customers</h3>
+      <h3 style="font-size: 13px; margin-bottom: 12px; color: var(--muted); text-transform: uppercase;">أكثر 3 عملاء عرضة للمخاطر</h3>
       <div class="table-wrap" style="min-width: 0; border-radius: 8px; border-color: rgba(148, 163, 184, 0.1);">
         <table style="min-width: 0;">
           <thead style="background: rgba(148, 163, 184, 0.05);">
-            <tr><th style="font-size: 10px; padding: 8px;">ID</th><th style="font-size: 10px; padding: 8px;">Risk</th><th style="font-size: 10px; padding: 8px;">Src</th><th style="font-size: 10px; padding: 8px;">Action</th></tr>
+            <tr><th style="font-size: 10px; padding: 8px;">المعرف</th><th style="font-size: 10px; padding: 8px;">الخطر</th><th style="font-size: 10px; padding: 8px;">المصدر</th><th style="font-size: 10px; padding: 8px;">إجراء</th></tr>
           </thead>
           <tbody>
             ${riskiest.map(c => `
@@ -1064,7 +1062,7 @@ function renderBatchOverview(data, title = "Batch Analysis Summary") {
                 <td style="padding: 8px; font-size: 12px;"><strong>${c.customer_id.substring(0, 14)}${c.customer_id.length > 14 ? '..' : ''}</strong></td>
                 <td style="padding: 8px;"><span class="badge ${riskClass(c.priority, c.risk_percentage)}" style="font-size: 10px; min-height: 20px; padding: 0 6px;">${c.risk_percentage}%</span></td>
                 <td style="padding: 8px;"><small style="font-size: 10px; color: var(--muted);">${c.connector_source || 'CSV'}</small></td>
-                <td style="padding: 8px;"><button class="small-button text" onclick="loadIntoForm('${c.customer_id}')" style="font-size: 10px; height: 22px; padding: 0 6px;">Try</button></td>
+                <td style="padding: 8px;"><button class="small-button text" onclick="loadIntoForm('${c.customer_id}')" style="font-size: 10px; height: 22px; padding: 0 6px;">تجربة</button></td>
               </tr>
             `).join('')}
           </tbody>
@@ -1072,7 +1070,7 @@ function renderBatchOverview(data, title = "Batch Analysis Summary") {
       </div>
       
       <div style="margin-top: 16px; text-align: center;">
-        <p class="form-note" style="font-size: 11px;">View full list in the Consumers Dashboard table.</p>
+        <p class="form-note" style="font-size: 11px;">عرض القائمة الكاملة في جدول جميع العملاء.</p>
       </div>
     </div>
   `;
@@ -1111,36 +1109,36 @@ function renderConnectorPanel(connectors) {
       <div class="connector-info" style="display: flex; flex-direction: column; gap: 4px;">
         <span class="connector-name">${icons[name] || '🔌'} ${capitalize(name)}</span>
         <span class="connector-badge ${info.mode === 'live' ? 'badge-live' : 'badge-mock'}">
-          ${info.mode === 'live' ? '● LIVE' : '● MOCK'}
+          ${info.mode === 'live' ? '● مباشر' : '● وهمي'}
         </span>
       </div>
       <div class="connector-actions" style="display: flex; gap: 8px;">
-        <button class="small-button text" onclick="testConnector('${name}')" title="Test Connection" type="button">Test</button>
-        <button class="small-button text" onclick="tryFirstRecord('${name}')" title="Try a real record" type="button" style="color: var(--brand);">Try</button>
-        <button class="small-button text" onclick="syncConnector('${name}')" type="button">Sync →</button>
+        <button class="small-button text" onclick="testConnector('${name}')" title="اختبار الاتصال" type="button">اختبار</button>
+        <button class="small-button text" onclick="tryFirstRecord('${name}')" title="تجربة سجل حقيقي" type="button" style="color: var(--brand);">تجربة</button>
+        <button class="small-button text" onclick="syncConnector('${name}')" type="button">مزامنة ←</button>
       </div>
     </div>
   `).join('') + `
     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line);">
-      <button class="primary-button" onclick="syncAllConnectors()" type="button" style="padding: 0 16px; min-height: 40px; flex: 1;">⟳ Sync All Sources</button>
-      <span id="sync-last-time" class="form-note" style="margin-left: 12px;"></span>
+      <button class="primary-button" onclick="syncAllConnectors()" type="button" style="padding: 0 16px; min-height: 40px; flex: 1;">⟳ مزامنة جميع المصادر</button>
+      <span id="sync-last-time" class="form-note" style="margin-right: 12px;"></span>
     </div>
   `;
 }
 
 async function testConnector(source) {
-  toast(`Testing ${source} connection...`);
+  toast(`جاري اختبار اتصال ${source}...`);
   try {
     // Call sync with limit=1 and score=false to just test the pipe
     const res = await fetch(`/api/v1/connectors/${source}/sync?limit=1&score=false`, { method: 'POST' });
     const data = await res.json();
     if (res.ok) {
-      toast(`✓ ${capitalize(source)} is ${data.mode}. Found ${data.total_fetched} records.`);
+      toast(`✓ ${capitalize(source)} في وضع ${data.mode}. تم العثور على ${data.total_fetched} سجل.`);
     } else {
-      toast(`✗ ${capitalize(source)} test failed: ${data.detail || 'Connection error'}`);
+      toast(`✗ فشل اختبار ${capitalize(source)}: ${data.detail || 'خطأ في الاتصال'}`);
     }
   } catch (err) {
-    toast(`Network error testing ${source}`);
+    toast(`خطأ في الشبكة عند اختبار ${source}`);
   }
 }
 
@@ -1151,7 +1149,7 @@ async function loadIntoForm(customerId) {
 }
 
 async function tryFirstRecord(source) {
-  toast(`Finding a record in ${source}...`);
+  toast(`جاري البحث عن سجل في ${source}...`);
   try {
     const res = await fetch(`/api/v1/connectors/${source}/sync?limit=1&score=false`, { method: 'POST' });
     const data = await res.json();
@@ -1159,50 +1157,50 @@ async function tryFirstRecord(source) {
       const firstId = data.results[0].customer_id;
       await loadIntoForm(firstId);
     } else {
-      toast(`No records found in ${source}`);
+      toast(`لم يتم العثور على سجلات في ${source}`);
     }
   } catch (err) {
-    toast(`Error trying ${source}`);
+    toast(`خطأ في تجربة ${source}`);
   }
 }
 
 async function syncConnector(source) {
-  toast(`Syncing ${source}...`);
+  toast(`جاري مزامنة ${source}...`);
   try {
     const res = await fetch(`/api/v1/connectors/${source}/sync?limit=50&score=true`, { method: 'POST' });
     const data = await res.json();
-    toast(`✓ ${data.scored_count} customers loaded from ${source} (${data.mode})`);
+    toast(`✓ تم تحميل ${data.scored_count} عميل من ${source} (${data.mode})`);
     if (typeof loadCustomers === 'function') loadCustomers();
-    renderBatchOverview(data, `${capitalize(source)} Sync Summary`);
+    renderBatchOverview(data, `ملخص مزامنة ${capitalize(source)}`);
     Promise.all([loadOverview(), loadRealtime()]).catch(console.error);
   } catch (err) {
-    toast(`Sync failed for ${source}`);
+    toast(`فشل المزامنة لـ ${source}`);
   }
 }
 
 async function syncAllConnectors() {
-  toast('Syncing all sources...');
+  toast('جاري مزامنة جميع المصادر...');
   try {
     const res = await fetch('/api/v1/connectors/sync-all?limit_per_source=25&score=true', { method: 'POST' });
     const data = await res.json();
     const lastTime = document.getElementById('sync-last-time');
-    if (lastTime) lastTime.textContent = `Last synced: just now`;
-    toast(`✓ ${data.scored_count} customers loaded from ${data.total_synced} records`);
+    if (lastTime) lastTime.textContent = `آخر مزامنة: الآن`;
+    toast(`✓ تم تحميل ${data.scored_count} عميل من ${data.total_synced} سجل`);
     if (typeof loadCustomers === 'function') loadCustomers();
-    renderBatchOverview(data, `Global Sync Summary`);
+    renderBatchOverview(data, `ملخص المزامنة الشاملة`);
     Promise.all([loadOverview(), loadRealtime()]).catch(console.error);
   } catch (err) {
-    toast('Sync all failed');
+    toast('فشل المزامنة الشاملة');
   }
 }
 
 async function fetchFromCrm() {
   const cid = $("user_id").value.trim();
   if (!cid) {
-    toast("Enter a Customer ID to lookup");
+    toast("أدخل معرف العميل للبحث");
     return;
   }
-  toast(`Looking up ${cid}...`);
+  toast(`جاري البحث عن ${cid}...`);
   try {
     const data = await api(`/api/v1/connectors/lookup/${encodeURIComponent(cid)}`);
     $("avg_plan_price").value = data.avg_plan_price;
@@ -1211,9 +1209,9 @@ async function fetchFromCrm() {
     $("billing_tenure_days").value = data.billing_tenure_days;
     $("auto_renew_count").value = data.auto_renew_count;
     $("total_cancellations").value = data.total_cancellations;
-    toast(`✓ Data loaded for ${cid} from ${data._connector_source}`);
+    toast(`✓ تم تحميل البيانات لـ ${cid} من ${data._connector_source}`);
   } catch (err) {
-    toast(`Lookup failed: ${err.message}`);
+    toast(`فشل البحث: ${err.message}`);
   }
 }
 
