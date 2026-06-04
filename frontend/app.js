@@ -223,16 +223,14 @@ function createChart(id, config) {
 
 function renderKpis(overview) {
   const cards = [
-    ["إجمالي العملاء", fmt.format(overview.total_customers), "العملاء المحفوظون", ""],
-    ["مخاطر منخفضة", fmt.format(overview.low_risk_users), "المخاطرة أقل من 40%", "success"],
-    ["مخاطر متوسطة", fmt.format(overview.medium_risk_users), "المخاطرة من 40% إلى 63.99%", "warning"],
-    ["مخاطر عالية", fmt.format(overview.high_risk_band_users), "المخاطرة من 64% إلى 84.99%", "critical"],
-    ["مخاطر حرجة", fmt.format(overview.critical_risk_users), "المخاطرة 85% أو أعلى", "critical"],
-    ["الإيرادات المعرضة للخطر", money.format(overview.revenue_at_risk), "الإيرادات المتوقع فقدانها", "critical"],
-    ["عملاء VIP", fmt.format(overview.vip_customers), "الحسابات المميزة المراقبة", ""],
-    ["متوسط التسرب", `${overview.average_churn}%`, "نقاط المخاطرة المدمجة", ""],
-    ["تدخلات الذكاء الاصطناعي", fmt.format(overview.ai_interventions_triggered), "سير العمل المفعّل", ""],
-    ["نجاح الاحتفاظ", `${overview.retention_success_rate}%`, "الصحة النموذجية للاحتفاظ", "success"],
+    ["إجمالي الحسابات في المسار", fmt.format(overview.total_customers), "حسابات نشطة", ""],
+    ["الإيرادات المهددة بالإلغاء", money.format(overview.revenue_at_risk), "تتطلب إجراءات اليوم", "critical"],
+    ["مخاطر منخفضة (Low)", fmt.format(overview.low_risk_users), "فرصة بيع متقاطع", "success"],
+    ["مخاطر متوسطة (Medium)", fmt.format(overview.medium_risk_users), "تحتاج متابعة قريبة", "warning"],
+    ["مخاطر عالية (High)", fmt.format(overview.high_risk_band_users), "خطر الإلغاء مرتفع", "high-risk"],
+    ["مخاطر حرجة (Critical)", fmt.format(overview.critical_risk_users), "خطر الإلغاء مرتفع جداً", "critical"],
+    ["عروض تجديد مقترحة", fmt.format(overview.ai_interventions_triggered), "عروض مولدة آلياً", "success"],
+    ["معدل الحفاظ على الإيرادات", `${overview.retention_success_rate}%`, "نسبة التجديد الناجح", "success"],
   ];
   $("kpiGrid").innerHTML = cards.map(([label, value, hint, tone]) => `
     <article class="kpi-card ${tone}">
@@ -241,16 +239,41 @@ function renderKpis(overview) {
       <small>${hint}</small>
     </article>
   `).join("");
-  $("modelStatus").textContent = overview.model_status === "online" ? "النموذج متصل" : "النموذج غير متصل";
+  $("modelStatus").textContent = overview.model_status === "online" ? "متصل بالنظام" : "النظام غير متصل";
 }
 
 function renderOverviewCharts(analytics) {
   const c = chartColors();
+  
+  // Render exact numbers for Risk Distribution
+  const riskLabels = {
+    "Low": { text: "منخفضة (صحية)", color: c.green },
+    "Medium": { text: "متوسطة (متأرجحة)", color: c.yellow },
+    "High": { text: "عالية (تدخل مطلوب)", color: c.red },
+    "Critical": { text: "حرجة (تدخل عاجل)", color: c.violet }
+  };
+  
+  const numbersHtml = Object.entries(analytics.churn_distribution).map(([key, value]) => {
+    const info = riskLabels[key] || { text: key, color: c.text };
+    return `
+      <div style="display: flex; align-items: center; justify-content: space-between; background: var(--panel); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line);">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: ${info.color}; display: inline-block;"></span>
+          <span style="font-size: 12px; color: var(--muted);">${info.text}</span>
+        </div>
+        <strong style="font-size: 14px; color: var(--text);">${fmt.format(value)}</strong>
+      </div>
+    `;
+  }).join("");
+  
+  const riskDiv = $("riskNumbers");
+  if (riskDiv) riskDiv.innerHTML = numbersHtml;
+
   createChart("churnChart", {
     type: "doughnut",
     data: {
-      labels: Object.keys(analytics.churn_distribution),
-      datasets: [{ data: Object.values(analytics.churn_distribution), backgroundColor: [c.green, c.yellow, c.blue, c.red], borderWidth: 0 }],
+      labels: Object.keys(analytics.churn_distribution).map(k => riskLabels[k] ? riskLabels[k].text : k),
+      datasets: [{ data: Object.values(analytics.churn_distribution), backgroundColor: [c.green, c.yellow, c.red, c.violet], borderWidth: 0 }],
     },
     options: { cutout: "62%", scales: {} },
   });
@@ -317,6 +340,31 @@ function renderHeatmap(rows) {
   `).join("");
 }
 
+function renderTopDealsList(overview) {
+  const container = $("topDealsList");
+  if (!container) return;
+  if (!overview.alerts || !overview.alerts.length) {
+    container.innerHTML = `<div class="table-loading" style="padding: 12px;">لا توجد صفقات مهددة بالإلغاء.</div>`;
+    return;
+  }
+  
+  container.innerHTML = overview.alerts.map(alert => `
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--panel-strong); border: 1px solid var(--line); border-right: 3px solid var(--danger); border-radius: 8px;">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <strong style="font-size: 14px; color: var(--text);">${escapeHtml(alert.customer_id)}</strong>
+        <span style="font-size: 12px; color: var(--muted);">${escapeHtml(alert.message)}</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="display: flex; flex-direction: column; text-align: left;" dir="ltr">
+          <span style="font-size: 11px; color: var(--muted); text-transform: uppercase;">صحة الحساب</span>
+          <strong style="color: var(--danger); font-size: 13px;">${alert.risk.toFixed(1)}% خطر</strong>
+        </div>
+        <button class="small-button" type="button" style="background: rgba(251, 113, 133, 0.15); color: var(--danger); border: 1px solid rgba(251, 113, 133, 0.3); padding: 6px 12px;" onclick="openCustomer('${escapeHtml(alert.customer_id)}')">مراجعة</button>
+      </div>
+    </div>
+  `).join("");
+}
+
 async function loadOverview() {
   const [overview, analytics] = await Promise.all([
     api("/api/v1/dashboard-overview"),
@@ -325,6 +373,7 @@ async function loadOverview() {
   renderKpis(overview);
   renderOverviewCharts(analytics);
   renderRealtimeOverview(overview);
+  renderTopDealsList(overview);
   runIcons();
 }
 
@@ -395,9 +444,14 @@ async function loadCustomers() {
         ${renderStep(0)}
         ${renderStep(1)}
         ${renderStep(2)}
-        <td>${renderBadge(`${row.priority} ${row.priority_score}`, tone === "critical" ? "danger" : tone === "high" ? "warning" : "")}</td>
+        <td>${renderBadge(`${row.priority} ${row.priority_score}`, tone === "critical" ? "danger" : tone === "high" ? "warning" : "success")}</td>
         <td dir="ltr">${new Date(row.last_activity).toLocaleDateString()}</td>
-        <td><button class="small-button danger-action" type="button" data-delete-customer="${escapeHtml(row.customer_id)}" aria-label="حذف ${escapeHtml(row.customer_id)}"><i data-lucide="trash-2"></i></button></td>
+        <td>
+          <div style="display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: nowrap;">
+            ${tone === "critical" || tone === "high" ? `<button class="small-button" type="button" style="background: var(--brand); color: var(--bg); padding: 6px; border: none; flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;" aria-label="تواصل الآن"><i data-lucide="phone-call" style="width: 16px; height: 16px;"></i></button>` : `<button class="small-button" type="button" style="background: rgba(148, 163, 184, 0.1); color: var(--text); padding: 6px; border: 1px solid var(--line); flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;" aria-label="تواصل"><i data-lucide="mail" style="width: 16px; height: 16px;"></i></button>`}
+            <button class="small-button danger-action" type="button" style="flex-shrink: 0; padding: 6px;" data-delete-customer="${escapeHtml(row.customer_id)}" aria-label="حذف ${escapeHtml(row.customer_id)}"><i data-lucide="trash-2" style="width: 16px; height: 16px;"></i></button>
+          </div>
+        </td>
       </tr>
     `;
   }).join("");

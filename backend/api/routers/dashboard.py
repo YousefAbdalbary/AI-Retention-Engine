@@ -65,7 +65,7 @@ async def dashboard_overview():
                 "customer_id": row["customer_id"],
                 "risk": row["risk"],
                 "priority": row["priority"],
-                "message": row["llm_analysis"]["next_best_action"],
+                "message": row.get("llm_analysis", {}).get("recommended_actions_ar", [""])[0] if row.get("llm_analysis") else "تحليل العميل مطلوب",
             }
             for row in top_alerts
         ],

@@ -3749,5 +3749,16 @@
     "updated_at": "2026-06-04T12:20:10.061235+00:00",
     "error": null,
     "subject": "hs_mock_1001, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "6333e448-9f64-4f58-8836-45138df4ee03",
+    "customer_id": "hs_mock_1001",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-04T12:58:05.501439+00:00",
+    "updated_at": "2026-06-04T12:58:07.773238+00:00",
+    "error": null,
+    "subject": "hs_mock_1001, Your Exclusive VIP Offer Is Waiting"
   }
 ]

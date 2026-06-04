@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>مركز قيادة الذكاء الاصطناعي للاحتفاظ بالعملاء</title>
+  <title>لوحة التحكم للمبيعات وتجديد الاشتراكات</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -23,7 +23,7 @@
       <nav class="nav-list" aria-label="Primary">
         <a class="nav-item active" href="#overview" data-view="overview"><i data-lucide="layout-dashboard"></i><span>نظرة عامة</span></a>
         <a class="nav-item" href="#customers" data-view="customers"><i data-lucide="users"></i><span>جميع العملاء</span></a>
-        <a class="nav-item" href="#analysis" data-view="analysis"><i data-lucide="brain-circuit"></i><span>تحليل الذكاء الاصطناعي</span></a>
+        <a class="nav-item" href="#analysis" data-view="analysis"><i data-lucide="brain-circuit"></i><span>رؤى المبيعات</span></a>
         <a class="nav-item" href="#realtime" data-view="realtime"><i data-lucide="activity"></i><span>تحديثات حية</span></a>
       </nav>
 
@@ -39,8 +39,8 @@
     <main class="workspace">
       <header class="topbar">
         <div>
-          <p class="eyebrow">ذكاء الاحتفاظ بالعملاء</p>
-          <h1>لوحة عمليات الذكاء الاصطناعي للمخاطر</h1>
+          <p class="eyebrow">إدارة مسار المبيعات</p>
+          <h1>لوحة التحكم للمبيعات وتجديد الاشتراكات</h1>
         </div>
         <div class="topbar-actions">
           <button class="icon-button" id="overviewPdfBtn" type="button" aria-label="حفظ نظرة عامة كملف PDF"><i data-lucide="file-down"></i></button>
@@ -58,18 +58,20 @@
           <article class="kpi-card skeleton"></article>
           <article class="kpi-card skeleton"></article>
           <article class="kpi-card skeleton"></article>
+          <article class="kpi-card skeleton"></article>
         </div>
 
         <div class="panel-grid">
           <section class="panel chart-panel">
             <div class="panel-header">
               <div>
-                <h2>توزيع التسرب</h2>
-                <p>نطاقات المخاطر حسب عدد العملاء.</p>
+                <h2>توزيع مستويات المخاطر</h2>
+                <p>عدد الحسابات في كل مستوى خطر.</p>
               </div>
               <span class="badge success">مباشر</span>
             </div>
-            <div class="chart-wrap"><canvas id="churnChart"></canvas></div>
+            <div class="chart-wrap" style="margin-bottom: 12px;"><canvas id="churnChart"></canvas></div>
+            <div id="riskNumbers" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line);"></div>
           </section>
 
           <section class="panel chart-panel">
@@ -100,6 +102,26 @@
               </div>
             </div>
             <div class="chart-wrap"><canvas id="actionChart"></canvas></div>
+          </section>
+
+          <section class="panel chart-panel">
+            <div class="panel-header">
+              <div>
+                <h2>نسبة عملاء VIP</h2>
+                <p>الحسابات الاستراتيجية مقابل الحسابات العادية.</p>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="vipChart"></canvas></div>
+          </section>
+
+          <section class="panel" style="grid-column: span 1 / -1;">
+            <div class="panel-header">
+              <div>
+                <h2>أهم الصفقات التي تتطلب تدخل سريع</h2>
+                <p>العملاء ذوي الإيرادات العالية المعرضون لخطر الإلغاء الشديد.</p>
+              </div>
+            </div>
+            <div id="topDealsList" style="display: flex; flex-direction: column; gap: 8px; padding-top: 12px;"></div>
           </section>
         </div>
       </section>
@@ -181,13 +203,13 @@
               <thead>
                 <tr>
                   <th data-sort="customer_id">معرف العميل</th>
-                  <th data-sort="risk">نسبة الخطر %</th>
+                  <th data-sort="risk">صحة الحساب %</th>
                   <th>VIP</th>
                   <th data-sort="revenue">الإيرادات</th>
                   <th>التواصل الأول</th>
                   <th>التواصل الثاني</th>
                   <th>التواصل الثالث</th>
-                  <th data-sort="priority_score">الأولوية</th>
+                  <th data-sort="priority_score">قيمة العميل (الأولوية)</th>
                   <th data-sort="last_activity">آخر نشاط</th>
                   <th>إجراءات</th>
                 </tr>
