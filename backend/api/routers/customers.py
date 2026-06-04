@@ -379,6 +379,37 @@ async def delete_customer(customer_id: str):
     return {"status": "deleted"}
 
 
+import hashlib
+import datetime
+import random
+
+def _get_or_create_comm_plan(customer_id: str) -> dict:
+    seed = int(hashlib.md5(customer_id.encode()).hexdigest(), 16)
+    r = random.Random(seed)
+    
+    types = ["Call", "WhatsApp", "Email", "Meeting"]
+    priorities = ["High", "Medium", "Low"]
+    statuses = ["Pending", "Completed", "Overdue"]
+    team_members = ["Sarah M.", "Ahmed K.", "Nour E.", "Laila T."]
+    
+    offset = r.randint(-5, 14)
+    followup_date = (datetime.date.today() + datetime.timedelta(days=offset)).isoformat()
+    
+    status = r.choice(statuses)
+    if offset < 0 and status == "Pending":
+        status = "Overdue"
+    elif offset >= 0 and status == "Overdue":
+        status = "Pending"
+        
+    return {
+        "followup_date": followup_date,
+        "followup_type": r.choice(types),
+        "priority": r.choice(priorities),
+        "status": status,
+        "assigned_to": r.choice(team_members),
+        "notes": "Discuss renewal offer and check account health." if r.random() > 0.5 else "Send pricing updates and follow up on latest ticket."
+    }
+
 @router.get("/customers")
 async def get_customers(
     page: int = Query(1, ge=1),
@@ -388,8 +419,18 @@ async def get_customers(
     vip: str = "all",
     sort_by: str = "risk",
     sort_dir: str = "desc",
+    date_from: str = "",
+    date_to: str = "",
+    comm_priority: str = "all",
+    comm_status: str = "all",
+    assigned_to: str = "all",
 ):
     rows = CUSTOMERS
+    
+    for row in rows:
+        if "communication_plan" not in row:
+            row["communication_plan"] = _get_or_create_comm_plan(row["customer_id"])
+
     if search:
         needle = search.lower()
         rows = [
@@ -410,6 +451,17 @@ async def get_customers(
         rows = [row for row in rows if row["is_vip"]]
     elif vip == "standard":
         rows = [row for row in rows if not row["is_vip"]]
+        
+    if date_from:
+        rows = [row for row in rows if row["communication_plan"]["followup_date"] >= date_from]
+    if date_to:
+        rows = [row for row in rows if row["communication_plan"]["followup_date"] <= date_to]
+    if comm_priority != "all":
+        rows = [row for row in rows if row["communication_plan"]["priority"].lower() == comm_priority.lower()]
+    if comm_status != "all":
+        rows = [row for row in rows if row["communication_plan"]["status"].lower() == comm_status.lower()]
+    if assigned_to != "all":
+        rows = [row for row in rows if row["communication_plan"]["assigned_to"].lower() == assigned_to.lower()]
 
     allowed_sort = {
         "customer_id",
@@ -433,13 +485,10 @@ async def get_customers(
             "risk": row["risk"],
             "vip_status": row["vip_status"],
             "revenue": row["revenue"],
-            "tenure": row["tenure"],
-            "cancel_rate": row["cancel_rate"],
-            "retention_status": row["retention_status"],
-            "ai_decision": row["ai_decision"],
             "priority": row["priority"],
             "priority_score": row["priority_score"],
             "last_activity": row["last_activity"],
+            "communication_plan": row["communication_plan"],
         }
         for row in page_rows
     ]

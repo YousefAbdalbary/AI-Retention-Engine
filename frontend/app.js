@@ -7,6 +7,11 @@ const state = {
   search: "",
   risk: "all",
   vip: "all",
+  dateFrom: "",
+  dateTo: "",
+  commPriority: "all",
+  commStatus: "all",
+  assignedTo: "all",
   charts: {},
   detailChart: null,
   lastAnalyzedCustomerId: null,
@@ -332,6 +337,11 @@ function customerQuery() {
     vip: state.vip,
     sort_by: state.sortBy,
     sort_dir: state.sortDir,
+    date_from: state.dateFrom,
+    date_to: state.dateTo,
+    comm_priority: state.commPriority,
+    comm_status: state.commStatus,
+    assigned_to: state.assignedTo,
   });
   return `/api/v1/customers?${params.toString()}`;
 }
@@ -350,16 +360,28 @@ async function loadCustomers() {
   }
   $("customersBody").innerHTML = data.items.map((row) => {
     const tone = riskClass(row.priority, row.risk);
+    const cp = row.communication_plan || {};
+    const overdueClass = cp.status === "Overdue" ? "status-overdue" : "";
+    
     return `
-      <tr class="${tone === "critical" ? "row-critical" : ""}" data-customer-id="${escapeHtml(row.customer_id)}">
+      <tr class="${tone === "critical" ? "row-critical" : ""} ${overdueClass}" data-customer-id="${escapeHtml(row.customer_id)}">
         <td><strong>${escapeHtml(row.customer_id)}</strong></td>
         <td>${row.risk.toFixed(2)}<div class="risk-bar ${tone}" style="--value:${row.risk}%"><span></span></div></td>
         <td>${renderBadge(row.vip_status, row.vip_status === "VIP" ? "success" : "")}</td>
         <td dir="ltr">${money.format(row.revenue)}</td>
-        <td dir="ltr">${fmt.format(row.tenure)} يوم</td>
-        <td dir="ltr">${(row.cancel_rate * 100).toFixed(1)}%</td>
-        <td>${escapeHtml(row.retention_status)}</td>
-        <td>${escapeHtml(row.ai_decision.replaceAll("_", " "))}</td>
+        <td>
+          <div class="comm-plan-cell">
+            <div class="comm-date-row">
+              <strong dir="ltr">${escapeHtml(cp.followup_date)}</strong>
+              ${renderBadge(cp.status, cp.status === 'Overdue' ? 'danger' : cp.status === 'Completed' ? 'success' : 'warning')}
+            </div>
+            <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">
+              ${escapeHtml(cp.followup_type)} • <span style="color: var(--text);">${escapeHtml(cp.assigned_to)}</span> • 
+              ${renderBadge(cp.priority, cp.priority === 'High' ? 'danger' : cp.priority === 'Medium' ? 'warning' : 'success')}
+            </div>
+            <div style="font-size: 12px; max-width: 250px; white-space: normal;">${escapeHtml(cp.notes)}</div>
+          </div>
+        </td>
         <td>${renderBadge(`${row.priority} ${row.priority_score}`, tone === "critical" ? "danger" : tone === "high" ? "warning" : "")}</td>
         <td dir="ltr">${new Date(row.last_activity).toLocaleDateString()}</td>
         <td><button class="small-button danger-action" type="button" data-delete-customer="${escapeHtml(row.customer_id)}" aria-label="حذف ${escapeHtml(row.customer_id)}"><i data-lucide="trash-2"></i></button></td>
@@ -851,6 +873,56 @@ function bindEvents() {
     state.page = 1;
     loadCustomers().catch(console.error);
   });
+  
+  // Advanced filters binding
+  const advancedFiltersPanel = $("advancedFilters");
+  const toggleAdvBtn = $("toggleAdvancedFiltersBtn");
+  
+  if (toggleAdvBtn) {
+    toggleAdvBtn.addEventListener("click", () => {
+      const isHidden = advancedFiltersPanel.style.display === "none";
+      advancedFiltersPanel.style.display = isHidden ? "block" : "none";
+      toggleAdvBtn.classList.toggle("active", isHidden);
+      toggleAdvBtn.setAttribute("aria-expanded", isHidden);
+    });
+  }
+
+  const bindFilter = (id, stateKey) => {
+    const el = $(id);
+    if (el) {
+      el.addEventListener("change", (e) => {
+        state[stateKey] = e.target.value;
+        state.page = 1;
+        loadCustomers().catch(console.error);
+      });
+    }
+  };
+
+  bindFilter("dateFromFilter", "dateFrom");
+  bindFilter("dateToFilter", "dateTo");
+  bindFilter("commPriorityFilter", "commPriority");
+  bindFilter("commStatusFilter", "commStatus");
+  bindFilter("assignedToFilter", "assignedTo");
+
+  const resetBtn = $("resetFiltersBtn");
+  if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+      $("dateFromFilter").value = "";
+      $("dateToFilter").value = "";
+      $("commPriorityFilter").value = "all";
+      $("commStatusFilter").value = "all";
+      $("assignedToFilter").value = "all";
+      
+      state.dateFrom = "";
+      state.dateTo = "";
+      state.commPriority = "all";
+      state.commStatus = "all";
+      state.assignedTo = "all";
+      state.page = 1;
+      
+      loadCustomers().catch(console.error);
+    });
+  }
   document.querySelectorAll("th[data-sort]").forEach((th) => {
     th.addEventListener("click", () => {
       const sort = th.dataset.sort;

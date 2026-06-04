@@ -111,23 +111,69 @@
               <h2>تحليلات جميع العملاء</h2>
               <p>ابحث، صفِّ، رتب، افحص، واحذف العملاء الذين قمت بتحليلهم أو رفعهم.</p>
             </div>
-            <div class="filters">
-              <label class="search-box">
-                <i data-lucide="search"></i>
-                <input id="customerSearch" type="search" placeholder="ابحث عن عميل أو شريحة" />
-              </label>
-              <select id="riskFilter" aria-label="تصفية حسب المخاطر">
-                <option value="all">جميع المخاطر</option>
-                <option value="critical">حرجة</option>
-                <option value="high">عالية وأكثر</option>
-                <option value="medium">متوسطة</option>
-                <option value="low">منخفضة</option>
-              </select>
-              <select id="vipFilter" aria-label="تصفية حسب الأهمية">
-                <option value="all">جميع العملاء</option>
-                <option value="vip">كبار الشخصيات (VIP) فقط</option>
-                <option value="standard">العملاء العاديين فقط</option>
-              </select>
+            <div class="filters-container" style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+              <div class="filters">
+                <label class="search-box">
+                  <i data-lucide="search"></i>
+                  <input id="customerSearch" type="search" placeholder="ابحث عن عميل أو شريحة" />
+                </label>
+                <select id="riskFilter" aria-label="تصفية حسب المخاطر">
+                  <option value="all">جميع المخاطر</option>
+                  <option value="critical">حرجة</option>
+                  <option value="high">عالية وأكثر</option>
+                  <option value="medium">متوسطة</option>
+                  <option value="low">منخفضة</option>
+                </select>
+                <select id="vipFilter" aria-label="تصفية حسب الأهمية">
+                  <option value="all">جميع العملاء</option>
+                  <option value="vip">كبار الشخصيات (VIP) فقط</option>
+                  <option value="standard">العملاء العاديين فقط</option>
+                </select>
+                <button type="button" class="small-button text" id="toggleAdvancedFiltersBtn" aria-expanded="false" style="margin-right: auto; gap: 6px;">
+                  <i data-lucide="sliders-horizontal"></i><span>فلاتر متقدمة</span>
+                </button>
+              </div>
+              
+              <!-- Advanced Filters -->
+              <div class="advanced-filters" id="advancedFilters" style="display: none; padding: 16px; background: rgba(148, 163, 184, 0.05); border: 1px solid var(--line); border-radius: 8px;">
+                <h3 style="margin-bottom: 12px; font-size: 13px; color: var(--brand);">فلاتر خطة التواصل</h3>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <label for="dateFromFilter" style="font-size: 13px; color: var(--muted);">من:</label>
+                    <input type="date" id="dateFromFilter" aria-label="من تاريخ" style="min-height: 36px;" />
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <label for="dateToFilter" style="font-size: 13px; color: var(--muted);">إلى:</label>
+                    <input type="date" id="dateToFilter" aria-label="إلى تاريخ" style="min-height: 36px;" />
+                  </div>
+                  
+                  <select id="commPriorityFilter" aria-label="تصفية حسب أولوية التواصل" style="min-height: 36px;">
+                    <option value="all">كل الأولويات</option>
+                    <option value="High">عالية</option>
+                    <option value="Medium">متوسطة</option>
+                    <option value="Low">منخفضة</option>
+                  </select>
+                  
+                  <select id="commStatusFilter" aria-label="تصفية حسب حالة التواصل" style="min-height: 36px;">
+                    <option value="all">كل الحالات</option>
+                    <option value="Pending">قيد الانتظار</option>
+                    <option value="Completed">مكتمل</option>
+                    <option value="Overdue">متأخر</option>
+                  </select>
+                  
+                  <select id="assignedToFilter" aria-label="تصفية حسب المسؤول" style="min-height: 36px;">
+                    <option value="all">جميع المسؤولين</option>
+                    <option value="Sarah M.">Sarah M.</option>
+                    <option value="Ahmed K.">Ahmed K.</option>
+                    <option value="Nour E.">Nour E.</option>
+                    <option value="Laila T.">Laila T.</option>
+                  </select>
+                  
+                  <button type="button" class="small-button text danger-action" id="resetFiltersBtn" style="min-height: 36px; gap: 4px;">
+                    <i data-lucide="rotate-ccw"></i><span>إعادة ضبط</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -139,17 +185,14 @@
                   <th data-sort="risk">نسبة الخطر %</th>
                   <th>VIP</th>
                   <th data-sort="revenue">الإيرادات</th>
-                  <th data-sort="tenure">مدة الاشتراك</th>
-                  <th data-sort="cancel_rate">معدل الإلغاء</th>
-                  <th>حالة الاحتفاظ</th>
-                  <th>قرار الذكاء الاصطناعي</th>
+                  <th>خطة التواصل</th>
                   <th data-sort="priority_score">الأولوية</th>
                   <th data-sort="last_activity">آخر نشاط</th>
                   <th>إجراءات</th>
                 </tr>
               </thead>
               <tbody id="customersBody">
-                <tr><td colspan="11"><div class="table-loading">جاري تحميل العملاء...</div></td></tr>
+                <tr><td colspan="8"><div class="table-loading">جاري تحميل العملاء...</div></td></tr>
               </tbody>
             </table>
           </div>
