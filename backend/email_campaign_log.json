@@ -3683,5 +3683,71 @@
     "updated_at": "2026-06-04T11:52:04.381771+00:00",
     "error": null,
     "subject": "hs_mock_1001, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "a58595be-7813-4f96-86dc-9065f0fed97b",
+    "customer_id": "hs_mock_1001",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-04T12:04:47.785400+00:00",
+    "updated_at": "2026-06-04T12:04:49.992374+00:00",
+    "error": null,
+    "subject": "hs_mock_1001, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "4bec7172-2b4f-4645-8730-f653ab0b65fb",
+    "customer_id": "cust_001",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-04T12:04:58.864112+00:00",
+    "updated_at": "2026-06-04T12:05:00.507712+00:00",
+    "error": null,
+    "subject": "cust_001, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "f8972d12-7f16-4ca8-80d7-0ed289a6f4bf",
+    "customer_id": "cust_002",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-04T12:05:03.017475+00:00",
+    "updated_at": "2026-06-04T12:05:05.242153+00:00",
+    "error": null,
+    "subject": "cust_002, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "d126f071-6018-4163-a3f1-96d986281098",
+    "customer_id": "cust_003",
+    "risk_level": "MEDIUM",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-04T12:05:07.769697+00:00",
+    "updated_at": "2026-06-04T12:05:11.049248+00:00",
+    "error": null,
+    "subject": "cust_003, We've Got Something Special For You"
+  },
+  {
+    "email_id": "d10b2031-f311-4923-956f-83746593781f",
+    "customer_id": "hs_mock_1001",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-04T12:15:21.305487+00:00",
+    "updated_at": "2026-06-04T12:15:23.289966+00:00",
+    "error": null,
+    "subject": "hs_mock_1001, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "7fea1177-e9f6-4b2c-85da-df6cfb6b292f",
+    "customer_id": "hs_mock_1001",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-04T12:20:08.440577+00:00",
+    "updated_at": "2026-06-04T12:20:10.061235+00:00",
+    "error": null,
+    "subject": "hs_mock_1001, Your Exclusive VIP Offer Is Waiting"
   }
 ]

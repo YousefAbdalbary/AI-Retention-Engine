@@ -489,6 +489,8 @@ async def get_customers(
             "priority_score": row["priority_score"],
             "last_activity": row["last_activity"],
             "communication_plan": row["communication_plan"],
+            "timeline": row.get("llm_analysis", {}).get("timeline_ar", []),
+            "recommended_actions": row.get("llm_analysis", {}).get("recommended_actions_ar", [])
         }
         for row in page_rows
     ]

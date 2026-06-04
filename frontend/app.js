@@ -106,8 +106,8 @@ function renderFeatureEffects(effects = []) {
   return `
     <div class="feature-list">
       ${effects.map((effect) => {
-        const increases = effect.direction === "increases_churn";
-        return `
+    const increases = effect.direction === "increases_churn";
+    return `
           <article class="feature-effect">
             <header>
               <div>
@@ -122,7 +122,7 @@ function renderFeatureEffects(effects = []) {
             <p style="font-size: 0.85em; color: var(--muted);">${escapeHtml(effect.explanation)}</p>
           </article>
         `;
-      }).join("")}
+  }).join("")}
     </div>
   `;
 }
@@ -168,17 +168,17 @@ function renderLlamaReport(report = {}) {
     <div class="llama-report">
       ${renderBadge(report.source || "local_fallback", report.source === "groq_llama" ? "success" : "warning")}
       ${sections.map(([title, key]) => {
-        const enValue = Array.isArray(english[key]) ? english[key].join(" | ") : english[key];
-        const arValue = Array.isArray(arabic[key]) ? arabic[key].join(" | ") : arabic[key];
-        if (!enValue && !arValue) return "";
-        return `
+    const enValue = Array.isArray(english[key]) ? english[key].join(" | ") : english[key];
+    const arValue = Array.isArray(arabic[key]) ? arabic[key].join(" | ") : arabic[key];
+    if (!enValue && !arValue) return "";
+    return `
           <article class="llama-section">
             <h4 class="arabic" dir="rtl" style="margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 4px;">${escapeHtml(title)}</h4>
             <p class="arabic" dir="rtl" style="font-size: 1.1em; line-height: 1.7; margin-bottom: 8px;">${escapeHtml(arValue || "")}</p>
             <p style="font-size: 0.85em; color: var(--muted);">${escapeHtml(enValue || "")}</p>
           </article>
         `;
-      }).join("")}
+  }).join("")}
     </div>
   `;
 }
@@ -360,28 +360,41 @@ async function loadCustomers() {
   }
   $("customersBody").innerHTML = data.items.map((row) => {
     const tone = riskClass(row.priority, row.risk);
-    const cp = row.communication_plan || {};
-    const overdueClass = cp.status === "Overdue" ? "status-overdue" : "";
+    const timeline = row.timeline || [];
+    const recommendedActions = row.recommended_actions || [];
+    const customSchedule = ["بعد يوم واحد", "بعد ٣ أيام", "بعد ٧ أيام"];
+    
+    const renderStep = (idx) => {
+      const step = timeline[idx] || {};
+      const actionText = recommendedActions[idx] || step.step;
+      if (!actionText) return `<td style="color: var(--muted); font-size: 12px;">-</td>`;
+      
+      const deadline = customSchedule[idx] || escapeHtml(step.deadline || "");
+      const colors = ["var(--danger)", "var(--warning)", "var(--brand)"];
+      const stepColor = colors[idx] || "var(--brand)";
+      
+      return `
+        <td>
+          <div class="comm-plan-cell">
+            <strong dir="rtl" style="color: ${stepColor}; font-size: 13px; display: block; margin-bottom: 4px;">${deadline}</strong>
+            <div style="font-size: 12px; max-width: 220px; white-space: normal; line-height: 1.5; color: var(--text);">
+              ${escapeHtml(actionText)}
+            </div>
+            ${step.owner ? `<div style="font-size: 11px; color: var(--muted); margin-top: 6px;">👤 ${escapeHtml(step.owner)}</div>` : ""}
+          </div>
+        </td>
+      `;
+    };
     
     return `
-      <tr class="${tone === "critical" ? "row-critical" : ""} ${overdueClass}" data-customer-id="${escapeHtml(row.customer_id)}">
+      <tr class="${tone === "critical" ? "row-critical" : ""}" data-customer-id="${escapeHtml(row.customer_id)}">
         <td><strong>${escapeHtml(row.customer_id)}</strong></td>
         <td>${row.risk.toFixed(2)}<div class="risk-bar ${tone}" style="--value:${row.risk}%"><span></span></div></td>
         <td>${renderBadge(row.vip_status, row.vip_status === "VIP" ? "success" : "")}</td>
         <td dir="ltr">${money.format(row.revenue)}</td>
-        <td>
-          <div class="comm-plan-cell">
-            <div class="comm-date-row">
-              <strong dir="ltr">${escapeHtml(cp.followup_date)}</strong>
-              ${renderBadge(cp.status, cp.status === 'Overdue' ? 'danger' : cp.status === 'Completed' ? 'success' : 'warning')}
-            </div>
-            <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">
-              ${escapeHtml(cp.followup_type)} • <span style="color: var(--text);">${escapeHtml(cp.assigned_to)}</span> • 
-              ${renderBadge(cp.priority, cp.priority === 'High' ? 'danger' : cp.priority === 'Medium' ? 'warning' : 'success')}
-            </div>
-            <div style="font-size: 12px; max-width: 250px; white-space: normal;">${escapeHtml(cp.notes)}</div>
-          </div>
-        </td>
+        ${renderStep(0)}
+        ${renderStep(1)}
+        ${renderStep(2)}
         <td>${renderBadge(`${row.priority} ${row.priority_score}`, tone === "critical" ? "danger" : tone === "high" ? "warning" : "")}</td>
         <td dir="ltr">${new Date(row.last_activity).toLocaleDateString()}</td>
         <td><button class="small-button danger-action" type="button" data-delete-customer="${escapeHtml(row.customer_id)}" aria-label="حذف ${escapeHtml(row.customer_id)}"><i data-lucide="trash-2"></i></button></td>
@@ -556,27 +569,27 @@ async function uploadCsvCustomers() {
     return;
   }
   const button = $("uploadCsvBtn");
-  if(button) {
-      button.disabled = true;
-      button.querySelector("span").textContent = "جاري تحليل CSV...";
+  if (button) {
+    button.disabled = true;
+    button.querySelector("span").textContent = "جاري تحليل CSV...";
   }
-  if($("csvUploadStatus")) $("csvUploadStatus").textContent = "جاري قراءة وتقييم صفوف CSV...";
+  if ($("csvUploadStatus")) $("csvUploadStatus").textContent = "جاري قراءة وتقييم صفوف CSV...";
   try {
     const csvText = await readCsvFile(file);
     const result = await api("/api/v1/customers/upload-csv", {
       method: "POST",
       body: JSON.stringify({ csv_text: csvText }),
     });
-    if($("csvUploadStatus")) $("csvUploadStatus").textContent = `تم استيراد ${result.imported} عميل. ${result.errors.length ? `تم تخطي ${result.errors.length} صف.` : "لا توجد أخطاء في الصفوف."}`;
+    if ($("csvUploadStatus")) $("csvUploadStatus").textContent = `تم استيراد ${result.imported} عميل. ${result.errors.length ? `تم تخطي ${result.errors.length} صف.` : "لا توجد أخطاء في الصفوف."}`;
     await Promise.all([loadOverview(), loadCustomers(), loadRealtime()]);
     toast(`اكتمل تحليل CSV: تم حفظ ${result.imported} عميل`);
   } catch (error) {
-    if($("csvUploadStatus")) $("csvUploadStatus").textContent = error.message;
+    if ($("csvUploadStatus")) $("csvUploadStatus").textContent = error.message;
     toast("فشل رفع CSV");
   } finally {
-    if(button) {
-        button.disabled = false;
-        button.querySelector("span").textContent = "تحليل CSV";
+    if (button) {
+      button.disabled = false;
+      button.querySelector("span").textContent = "تحليل CSV";
     }
     runIcons();
   }
@@ -873,11 +886,11 @@ function bindEvents() {
     state.page = 1;
     loadCustomers().catch(console.error);
   });
-  
+
   // Advanced filters binding
   const advancedFiltersPanel = $("advancedFilters");
   const toggleAdvBtn = $("toggleAdvancedFiltersBtn");
-  
+
   if (toggleAdvBtn) {
     toggleAdvBtn.addEventListener("click", () => {
       const isHidden = advancedFiltersPanel.style.display === "none";
@@ -912,17 +925,18 @@ function bindEvents() {
       $("commPriorityFilter").value = "all";
       $("commStatusFilter").value = "all";
       $("assignedToFilter").value = "all";
-      
+
       state.dateFrom = "";
       state.dateTo = "";
       state.commPriority = "all";
       state.commStatus = "all";
       state.assignedTo = "all";
       state.page = 1;
-      
+
       loadCustomers().catch(console.error);
     });
   }
+
   document.querySelectorAll("th[data-sort]").forEach((th) => {
     th.addEventListener("click", () => {
       const sort = th.dataset.sort;
@@ -990,8 +1004,8 @@ function handleCsvFile(event, mode) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => { 
-    csvFiles[mode] = e.target.result; 
+  reader.onload = e => {
+    csvFiles[mode] = e.target.result;
     const dropzone = $(`dropzone-${mode}`);
     if (dropzone) {
       const span = dropzone.querySelector('span');
