@@ -20,9 +20,12 @@ import json
 import logging
 import threading
 import uuid
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+from core.db import get_db_connection
 
 logger = logging.getLogger("enterprise-retention-ai.email-tracker")
 
@@ -44,23 +47,55 @@ class EmailTracker:
     # ── persistence ────────────────────────────────────────────────────
 
     def _load(self) -> None:
-        if _STORE_FILE.exists():
-            try:
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT data FROM emails")
+                rows = cursor.fetchall()
+                if rows:
+                    self._records = {json.loads(r["data"])["email_id"]: json.loads(r["data"]) for r in rows}
+                    logger.info("Loaded %d email records from SQLite", len(self._records))
+                    return
+
+            if _STORE_FILE.exists():
+                logger.info("SQLite email store empty, migrating from JSON...")
                 data = json.loads(_STORE_FILE.read_text(encoding="utf-8"))
                 if isinstance(data, list):
                     self._records = {r["email_id"]: r for r in data}
                 elif isinstance(data, dict):
                     self._records = data
-                logger.info("Loaded %d email records from store", len(self._records))
-            except Exception as exc:
-                logger.warning("Failed to load email store: %s", exc)
+                
+                with get_db_connection() as conn:
+                    cursor = conn.cursor()
+                    for email_id, record in self._records.items():
+                        cursor.execute(
+                            "INSERT OR REPLACE INTO emails (email_id, data) VALUES (?, ?)",
+                            (email_id, json.dumps(record, ensure_ascii=False))
+                        )
+                    conn.commit()
 
-    def _save(self) -> None:
+                backup_path = _STORE_FILE.with_suffix(".json.bak")
+                shutil.move(str(_STORE_FILE), str(backup_path))
+                logger.info("Email migration complete.")
+        except Exception as exc:
+            logger.warning("Failed to load email store: %s", exc)
+
+    def _save(self, email_id: str = None) -> None:
         try:
-            _STORE_FILE.write_text(
-                json.dumps(list(self._records.values()), indent=2, ensure_ascii=False),
-                encoding="utf-8",
-            )
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                if email_id and email_id in self._records:
+                    cursor.execute(
+                        "INSERT OR REPLACE INTO emails (email_id, data) VALUES (?, ?)",
+                        (email_id, json.dumps(self._records[email_id], ensure_ascii=False))
+                    )
+                else:
+                    for eid, record in self._records.items():
+                        cursor.execute(
+                            "INSERT OR REPLACE INTO emails (email_id, data) VALUES (?, ?)",
+                            (eid, json.dumps(record, ensure_ascii=False))
+                        )
+                conn.commit()
         except Exception as exc:
             logger.warning("Failed to persist email store: %s", exc)
 
@@ -87,7 +122,7 @@ class EmailTracker:
         }
         with _lock:
             self._records[email_id] = record
-            self._save()
+            self._save(email_id)
         logger.info("Email %s created for customer %s", email_id, customer_id)
         return email_id
 
@@ -98,7 +133,7 @@ class EmailTracker:
                 rec["status"] = "SENDING"
                 rec["attempts"] += 1
                 rec["updated_at"] = _now_iso()
-                self._save()
+                self._save(email_id)
 
     def mark_sent(self, email_id: str) -> None:
         with _lock:
@@ -107,7 +142,7 @@ class EmailTracker:
                 rec["status"] = "SENT"
                 rec["updated_at"] = _now_iso()
                 rec["error"] = None
-                self._save()
+                self._save(email_id)
         logger.info("Email %s marked SENT", email_id)
 
     def mark_failed(self, email_id: str, error: str) -> None:
@@ -117,7 +152,7 @@ class EmailTracker:
                 rec["status"] = "FAILED"
                 rec["updated_at"] = _now_iso()
                 rec["error"] = error
-                self._save()
+                self._save(email_id)
         logger.warning("Email %s marked FAILED: %s", email_id, error)
 
     def get(self, email_id: str) -> dict[str, Any] | None:
