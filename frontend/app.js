@@ -678,7 +678,7 @@ async function openCustomer(customerId) {
           <div class="mini-card"><span>مدة الاشتراك</span><strong dir="ltr">${fmt.format(customer.tenure)} يوم</strong></div>
           <div class="mini-card"><span>معدل الإلغاء</span><strong dir="ltr">${(customer.cancel_rate * 100).toFixed(1)}%</strong></div>
           <div class="mini-card"><span>الشريحة</span><strong>${escapeHtml(customer.segment)}</strong></div>
-          <div class="mini-card"><span>قرار الذكاء الاصطناعي</span><strong>${escapeHtml(customer.ai_decision.replaceAll("_", " "))}</strong></div>
+          <div class="mini-card"><span>قرار الذكاء الاصطناعي</span><strong>${escapeHtml((customer.ai_decision || "").replaceAll("_", " "))}</strong></div>
           <div class="mini-card"><span>الحالة</span><strong>${escapeHtml(customer.retention_status)}</strong></div>
         </div>
         <div class="chart-wrap"><canvas id="detailTrendChart"></canvas></div>
@@ -781,7 +781,7 @@ async function saveOverviewPdf() {
     <h2>أكثر العملاء عرضة للخطر</h2>
     <table>
       <thead><tr><th>العميل</th><th>الخطر</th><th>الأولوية</th><th>القرار</th><th>الإيرادات</th></tr></thead>
-      <tbody>${customers.items.map((row) => `<tr><td>${escapeHtml(row.customer_id)}</td><td>${row.risk}%</td><td>${escapeHtml(row.priority)}</td><td>${escapeHtml(row.ai_decision)}</td><td dir="ltr">${money.format(row.revenue)}</td></tr>`).join("")}</tbody>
+      <tbody>${customers.items.map((row) => `<tr><td>${escapeHtml(row.customer_id)}</td><td>${row.risk}%</td><td>${escapeHtml(row.priority)}</td><td>${escapeHtml((row.ai_decision || "").replaceAll("_", " "))}</td><td dir="ltr">${money.format(row.revenue)}</td></tr>`).join("")}</tbody>
     </table>
     <h2>ملاحظات تنفيذية</h2>
     <p>تستند هذه النظرة العامة فقط إلى العملاء المحفوظين من خلال التحليل اليدوي أو رفع CSV.</p>
@@ -802,7 +802,7 @@ async function saveCustomerPdf(customerId) {
       <div class="card"><strong>الإيرادات</strong><br><span dir="ltr">${money.format(customer.revenue)}</span></div>
       <div class="card"><strong>VIP</strong><br>${escapeHtml(customer.vip_status)}</div>
       <div class="card"><strong>معدل الإلغاء</strong><br>${(customer.cancel_rate * 100).toFixed(1)}%</div>
-      <div class="card"><strong>قرار الذكاء الاصطناعي</strong><br>${escapeHtml(customer.ai_decision)}</div>
+      <div class="card"><strong>قرار الذكاء الاصطناعي</strong><br>${escapeHtml((customer.ai_decision || "").replaceAll("_", " "))}</div>
     </section>
     <h2>الإجراء الأفضل التالي</h2>
     <div class="section">

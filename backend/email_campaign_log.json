@@ -3760,5 +3760,181 @@
     "updated_at": "2026-06-04T12:58:07.773238+00:00",
     "error": null,
     "subject": "hs_mock_1001, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "e52eb3a9-c005-4ae9-b564-1b1b6069aff4",
+    "customer_id": "hs_mock_1001",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-06T12:41:55.671191+00:00",
+    "updated_at": "2026-06-06T12:41:57.684199+00:00",
+    "error": null,
+    "subject": "hs_mock_1001, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "d2a88f80-5926-4566-9324-ad8d884fb551",
+    "customer_id": "hs_mock_1001",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-06T12:41:57.125188+00:00",
+    "updated_at": "2026-06-06T12:41:58.888866+00:00",
+    "error": null,
+    "subject": "hs_mock_1001, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "a874b747-d914-4c40-8deb-7a9667690216",
+    "customer_id": "hs_mock_1001",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-06T12:42:22.097271+00:00",
+    "updated_at": "2026-06-06T12:42:23.841463+00:00",
+    "error": null,
+    "subject": "hs_mock_1001, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "75e55713-4df8-4981-aef0-7a39c4403f26",
+    "customer_id": "hs_mock_1001",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-06T12:42:46.336707+00:00",
+    "updated_at": "2026-06-06T12:42:48.005298+00:00",
+    "error": null,
+    "subject": "hs_mock_1001, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "ff3dae1f-afce-4e7a-84f9-436db5ccfa47",
+    "customer_id": "hs_mock_1001",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-06T12:42:47.145706+00:00",
+    "updated_at": "2026-06-06T12:42:49.234763+00:00",
+    "error": null,
+    "subject": "hs_mock_1001, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "b742dcce-b565-4aef-973d-045e3e1d768c",
+    "customer_id": "hs_mock_1001",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-06T12:44:34.585632+00:00",
+    "updated_at": "2026-06-06T12:44:36.942863+00:00",
+    "error": null,
+    "subject": "hs_mock_1001, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "df326b05-787f-473c-9534-771ad2e819c0",
+    "customer_id": "VIP-USER-77711",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-06T12:45:20.786986+00:00",
+    "updated_at": "2026-06-06T12:45:22.594743+00:00",
+    "error": null,
+    "subject": "VIP-USER-77711, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "8875dc54-4ac6-476e-a419-856ab2ffaea5",
+    "customer_id": "VIP-USER-77711",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-06T12:46:12.376873+00:00",
+    "updated_at": "2026-06-06T12:46:16.543990+00:00",
+    "error": null,
+    "subject": "VIP-USER-77711, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "4f0fd4b5-706a-43b4-b4a7-3cf1c9f774a2",
+    "customer_id": "VIP-USER-77711",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-06T12:46:13.668254+00:00",
+    "updated_at": "2026-06-06T12:46:17.397927+00:00",
+    "error": null,
+    "subject": "VIP-USER-77711, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "3fe40fb7-e0b8-4aaf-b3e3-77bd3a3dfb02",
+    "customer_id": "VIP-USER-77711",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-06T12:46:13.975493+00:00",
+    "updated_at": "2026-06-06T12:46:17.793675+00:00",
+    "error": null,
+    "subject": "VIP-USER-77711, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "764a0d3d-9652-40fc-ad99-921e80ae0571",
+    "customer_id": "VIP-USER-77711",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-06T12:46:14.220516+00:00",
+    "updated_at": "2026-06-06T12:46:18.933636+00:00",
+    "error": null,
+    "subject": "VIP-USER-77711, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "0d9f87a8-9c28-44c9-9adf-d6d08f1e9008",
+    "customer_id": "VIP-USER-77711",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-06T12:46:14.571446+00:00",
+    "updated_at": "2026-06-06T12:46:16.768884+00:00",
+    "error": null,
+    "subject": "VIP-USER-77711, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "0533c8f0-adc8-4c1b-a064-661c2211bdf7",
+    "customer_id": "VIP-USER-77711",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-06T12:46:14.784331+00:00",
+    "updated_at": "2026-06-06T12:46:17.092148+00:00",
+    "error": null,
+    "subject": "VIP-USER-77711, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "71c8f8a4-cdf0-46a7-bcad-da7fc8b0e5a5",
+    "customer_id": "VIP-USER-77711",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-06T12:46:49.881890+00:00",
+    "updated_at": "2026-06-06T12:46:53.179101+00:00",
+    "error": null,
+    "subject": "VIP-USER-77711, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "2d36ac53-85c4-430a-b2ab-b74c0b0f2c12",
+    "customer_id": "VIP-USER-77711",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-06T12:46:51.312939+00:00",
+    "updated_at": "2026-06-06T12:46:53.477962+00:00",
+    "error": null,
+    "subject": "VIP-USER-77711, Your Exclusive VIP Offer Is Waiting"
+  },
+  {
+    "email_id": "f8c927f8-24e3-4c44-a43b-d03297f2bf59",
+    "customer_id": "VIP-USER-77711",
+    "risk_level": "HIGH",
+    "status": "SENT",
+    "attempts": 1,
+    "created_at": "2026-06-06T12:49:33.585478+00:00",
+    "updated_at": "2026-06-06T12:49:37.367103+00:00",
+    "error": null,
+    "subject": "VIP-USER-77711, Your Exclusive VIP Offer Is Waiting"
   }
 ]
