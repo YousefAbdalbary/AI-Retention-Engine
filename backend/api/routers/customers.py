@@ -60,19 +60,39 @@ async def upload_file_customers(
             
             # Extract basic ID mapping
             user_id = str(
-                clean_row.get("user_id") or clean_row.get("profile - user id") or clean_row.get("user id") or f"UPLOAD-{imported+1}"
+                clean_row.get("user_id") or clean_row.get("identity - user id") or clean_row.get("profile - user id") or clean_row.get("user id") or clean_row.get("customer_id") or clean_row.get("identity") or f"UPLOAD-{imported+1}"
             ).strip()
-            
+
+            # Aggressively search for a "name" column, prioritizing exact match or suffix match
+            found_name = clean_row.get("name")
+            if not found_name:
+                for key in clean_row.keys():
+                    if key.endswith("- name") or " name" in key or key.startswith("name"):
+                        found_name = clean_row[key]
+                        break
+            if not found_name:
+                found_name = user_id
+
+            # Aggressively search for email
+            found_email = clean_row.get("email") or clean_row.get("identity - email") or clean_row.get("profile - email")
+            if not found_email:
+                for key in clean_row.keys():
+                    if key.endswith("- email") or " email" in key or key.startswith("email"):
+                        found_email = clean_row[key]
+                        break
+
             # Map remaining fields roughly matching our dataset analysis
             mapped = {
                 "user_id": user_id,
-                "name": clean_row.get("name") or clean_row.get("profile - name"),
-                "email": clean_row.get("email") or clean_row.get("profile - email"),
-                "industry": clean_row.get("industry") or clean_row.get("profile - industry"),
-                "contract": clean_row.get("contract") or clean_row.get("profile - contract"),
-                "segment": clean_row.get("segment") or clean_row.get("profile - segment"),
-                "avg_plan_price": clean_row.get("avg_plan_price") or clean_row.get("billing & usage - avg plan price") or clean_row.get("avg plan price"),
-                "total_transactions": clean_row.get("transactions") or clean_row.get("total_transactions") or clean_row.get("billing & usage - transactions"),
+                "name": found_name,
+                "email": found_email,
+                "industry": clean_row.get("industry") or clean_row.get("identity - industry") or clean_row.get("profile - industry"),
+                "contract": clean_row.get("contract") or clean_row.get("identity - contract") or clean_row.get("profile - contract"),
+                "segment": clean_row.get("segment") or clean_row.get("identity - segment") or clean_row.get("profile - segment"),
+                "avg_plan_price": clean_row.get("avg_plan_price") or clean_row.get("billing & transactions - avg plan price") or clean_row.get("billing & usage - avg plan price") or clean_row.get("avg plan price"),
+                "total_amount_paid": clean_row.get("total_paid") or clean_row.get("total_amount_paid") or clean_row.get("billing & transactions - total paid"),
+                "total_transactions": clean_row.get("transactions") or clean_row.get("total_transactions") or clean_row.get("billing & transactions - transactions") or clean_row.get("billing & usage - transactions"),
+                "billing_tenure_days": clean_row.get("tenure (days)") or clean_row.get("billing_tenure_days") or clean_row.get("billing & transactions - tenure (days)"),
                 "auto_renew_count": clean_row.get("auto_renewals") or clean_row.get("auto_renew_count") or clean_row.get("engagement metrics - auto renewals"),
                 "total_cancellations": clean_row.get("cancellations") or clean_row.get("total_cancellations") or clean_row.get("engagement metrics - cancellations"),
                 "payment_failures": clean_row.get("payment_failures") or clean_row.get("engagement metrics - payment failures"),
@@ -106,6 +126,8 @@ async def upload_file_customers(
                         pers_msg = item.get("llm_analysis", {}).get("english", {}).get("email_strategy", "")
                         email_res = send_retention_email(
                             customer_id=item["customer_id"],
+                            customer_name=item.get("name", item["customer_id"]),
+                            receiver_email=item.get("email"),
                             risk_pct=item["risk_percentage"],
                             personalized_message=pers_msg
                         )
@@ -446,6 +468,8 @@ async def upload_csv_customers(
                     pers_msg = item.get("llm_analysis", {}).get("english", {}).get("email_strategy", "")
                     email_res = send_retention_email(
                         customer_id=item["customer_id"],
+                        customer_name=item.get("name", item["customer_id"]),
+                        receiver_email=item.get("email"),
                         risk_pct=item["risk_percentage"],
                         personalized_message=pers_msg
                     )
@@ -550,7 +574,7 @@ async def get_customers(
         rows = [
             row
             for row in rows
-            if needle in row["customer_id"].lower() or needle in row["segment"].lower()
+            if needle in row["customer_id"].lower() or needle in row.get("name", "").lower() or needle in row["segment"].lower()
         ]
     if risk != "all":
         if risk == "critical":
@@ -596,6 +620,7 @@ async def get_customers(
     items = [
         {
             "customer_id": row["customer_id"],
+            "name": row.get("name", row["customer_id"]),
             "risk": row["risk"],
             "vip_status": row["vip_status"],
             "revenue": row["revenue"],

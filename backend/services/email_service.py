@@ -74,6 +74,7 @@ def send_retention_email(
     customer_id: str,
     risk_pct: float,
     *,
+    customer_name: str | None = None,
     receiver_email: str | None = None,
     personalized_message: str = "",
     attachment_path: str | None = None,
@@ -87,6 +88,8 @@ def send_retention_email(
         Customer identifier shown in the email body.
     risk_pct : float
         Churn risk percentage (0–100).
+    customer_name : str, optional
+        Customer's name for greeting / subject lines.
     receiver_email : str, optional
         Override the default test receiver.
     personalized_message : str, optional
@@ -112,15 +115,16 @@ def send_retention_email(
 
     print(f"\n{'='*60}")
     print(f"  EMAIL CAMPAIGN — {email_type_name}")
-    print(f"  Customer : {customer_id}")
+    print(f"  Customer : {customer_name or customer_id}")
     print(f"  Risk Tier: {risk_level} ({risk_pct:.1f}%)")
     print(f"  Receiver : {receiver}")
     print(f"{'='*60}")
 
     # 1. Generate the template
     subject, html_body = generate_email_template(
-        customer_id,
-        risk_pct,
+        customer_id=customer_id,
+        customer_name=customer_name,
+        risk_pct=risk_pct,
         personalized_message=personalized_message,
     )
 
@@ -269,11 +273,16 @@ def send_bulk_retention_emails(
     results = []
     for cust in customers:
         cid = cust.get("customer_id", "UNKNOWN")
+        cname = cust.get("name")
+        cemail = receiver_email or cust.get("email")
         risk = float(cust.get("risk", cust.get("risk_percentage", 50)))
+        pers_msg = cust.get("llm_analysis", {}).get("english", {}).get("email_strategy", "")
         result = send_retention_email(
             customer_id=cid,
+            customer_name=cname,
             risk_pct=risk,
-            receiver_email=receiver_email,
+            receiver_email=cemail,
+            personalized_message=pers_msg,
         )
         results.append(result)
     return results

@@ -62,6 +62,8 @@ async def analyze_risk(
                 pers_msg = result.get("llm_analysis", {}).get("english", {}).get("email_strategy", "")
                 email_res = send_retention_email(
                     customer_id=result["customer_id"],
+                    customer_name=result.get("name"),
+                    receiver_email=result.get("email"),
                     risk_pct=risk_percentage,
                     personalized_message=pers_msg
                 )
@@ -182,6 +184,8 @@ async def analyze_risk_detailed(
             try:
                 send_retention_email(
                     customer_id=result["customer_id"],
+                    customer_name=result.get("name"),
+                    receiver_email=result.get("email"),
                     risk_pct=risk_percentage,
                 )
             except Exception as email_exc:

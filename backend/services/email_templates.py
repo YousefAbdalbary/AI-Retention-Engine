@@ -198,7 +198,8 @@ def _base_layout(
 
 def generate_email_template(
     customer_id: str,
-    risk_pct: float,
+    customer_name: str | None = None,
+    risk_pct: float = 50.0,
     *,
     personalized_message: str = "",
 ) -> tuple[str, str]:
@@ -212,17 +213,21 @@ def generate_email_template(
     ----------
     customer_id : str
         Unique customer identifier.
+    customer_name : str, optional
+        Display name. Falls back to customer_id if not provided.
     risk_pct : float
         Churn-risk percentage (0-100). Used for routing only.
     personalized_message : str, optional
         AI-generated or manually-crafted personal note inserted in body.
     """
+    # Always ensure we have a display name
+    display_name = customer_name or customer_id
 
     if risk_pct < 40:
-        return _low_risk_email(customer_id, personalized_message)
+        return _low_risk_email(display_name, personalized_message)
     if risk_pct < 70:
-        return _medium_risk_email(customer_id, personalized_message)
-    return _high_risk_email(customer_id, personalized_message)
+        return _medium_risk_email(display_name, personalized_message)
+    return _high_risk_email(display_name, personalized_message)
 
 
 # ── Private builders ───────────────────────────────────────────────────────

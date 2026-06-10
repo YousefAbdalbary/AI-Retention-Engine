@@ -117,6 +117,8 @@ def customer_from_prediction(
 
     result = {
         "customer_id": customer.user_id,
+        "name": customer.name if customer.name != "Unknown" else customer.user_id,
+        "email": customer.email,
         "risk": risk_percentage,
         "risk_percentage": risk_percentage,
         "health_score": health_score,

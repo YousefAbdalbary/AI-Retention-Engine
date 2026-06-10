@@ -29,10 +29,14 @@ async def send_single_email(
 
     def _task():
         try:
+            cust_info = CUSTOMERS_BY_ID.get(payload.customer_id, {})
+            cust_name = cust_info.get("name")
+            rec_email = payload.receiver_email or cust_info.get("email")
             result = send_retention_email(
                 customer_id=payload.customer_id,
+                customer_name=cust_name,
                 risk_pct=payload.risk_pct,
-                receiver_email=payload.receiver_email,
+                receiver_email=rec_email,
                 personalized_message=payload.personalized_message,
                 attachment_path=payload.attachment_path,
             )
@@ -65,10 +69,14 @@ async def send_single_email_sync(payload: EmailSendRequest):
     Blocks until email is sent (or all retries exhausted) and returns full result.
     """
     try:
+        cust_info = CUSTOMERS_BY_ID.get(payload.customer_id, {})
+        cust_name = cust_info.get("name")
+        rec_email = payload.receiver_email or cust_info.get("email")
         result = send_retention_email(
             customer_id=payload.customer_id,
+            customer_name=cust_name,
             risk_pct=payload.risk_pct,
-            receiver_email=payload.receiver_email,
+            receiver_email=rec_email,
             personalized_message=payload.personalized_message,
             attachment_path=payload.attachment_path,
         )
@@ -216,8 +224,9 @@ async def preview_email_template(
             detail="risk_level must be 'low', 'medium', or 'high'",
         )
     subject, html = generate_email_template(
-        customer_id,
-        risk_pct,
+        customer_id=customer_id,
+        customer_name="Valued Customer",
+        risk_pct=risk_pct,
         personalized_message="This is a preview of the AI-generated personalized message.",
     )
     return HTMLResponse(content=html)

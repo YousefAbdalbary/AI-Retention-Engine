@@ -279,7 +279,7 @@ function renderKpis(overview) {
   const cards = [
     ["إجمالي الحسابات في المسار", fmt.format(overview.total_customers), "حسابات نشطة", ""],
     ["الإيرادات المهددة بالإلغاء", money.format(overview.revenue_at_risk), "تتطلب إجراءات اليوم", "critical"],
-    ["متوسط صحة العملاء", `${overview.average_health}/100`, "حالة الحسابات الإجمالية", "success"],
+    ["مؤشر رضا العملاء", `${overview.average_health}/100`, "متوسط مستوى رضا وتفاعل العملاء", "success"],
     ["مخاطر منخفضة (Low)", fmt.format(overview.low_risk_users), "فرصة بيع متقاطع", "success"],
     ["مخاطر متوسطة (Medium)", fmt.format(overview.medium_risk_users), "تحتاج متابعة قريبة", "warning"],
     ["مخاطر عالية (High)", fmt.format(overview.high_risk_band_users), "خطر الإلغاء مرتفع", "high-risk"],
@@ -542,7 +542,7 @@ async function loadCustomers() {
     
     return `
       <tr class="${tone === "critical" ? "row-critical" : ""}" data-customer-id="${escapeHtml(row.customer_id)}">
-        <td><strong>${escapeHtml(row.customer_id)}</strong></td>
+        <td><strong>${escapeHtml(row.name || row.customer_id)}</strong><br/><small style="color: var(--muted); font-weight: normal; font-size: 11px;">${escapeHtml(row.customer_id)}</small></td>
         <td>${row.risk.toFixed(2)}<div class="risk-bar ${tone}" style="--value:${row.risk}%"><span></span></div></td>
         <td>${renderBadge(row.vip_status, row.vip_status === "VIP" ? "success" : "")}</td>
         <td dir="ltr">${money.format(row.revenue)}</td>
@@ -782,7 +782,8 @@ async function openCustomer(customerId) {
   try {
     const customer = await api(`/api/v1/customer/${encodeURIComponent(customerId)}`);
     currentCustomer = customer;
-    $("profileTitle").textContent = customer.customer_id;
+    $("profileTitle").textContent = customer.name || customer.customer_id;
+    $("profileEyebrow").textContent = customer.customer_id;
     
     // Mock 3 features if missing
     const loyaltyScore = customer.loyalty_score ?? Math.floor(Math.random() * 40 + 60);
@@ -1076,7 +1077,7 @@ async function saveCustomerPdf(customerId) {
 function renderRealtimeOverview(overview) {
   $("alertList").innerHTML = overview.alerts.length ? overview.alerts.map((alert) => `
     <div class="alert-item">
-      <strong>${escapeHtml(alert.customer_id)} | <span dir="ltr">${alert.risk.toFixed(2)}%</span></strong>
+      <strong>${escapeHtml(alert.name || alert.customer_id)} | <span dir="ltr">${alert.risk.toFixed(2)}%</span></strong>
       <span>${escapeHtml(alert.message)}</span>
     </div>
   `).join("") : `<div class="alert-item"><strong>لا يوجد عملاء ذوي مخاطر عالية محفوظون</strong><span>قم بتحليل العملاء أو رفع CSV لملء التنبيهات.</span></div>`;
@@ -1429,12 +1430,12 @@ function renderBatchOverview(data, title = "ملخص تحليل الدفعة") {
       <div class="table-wrap" style="min-width: 0; border-radius: 8px; border-color: rgba(148, 163, 184, 0.1);">
         <table style="min-width: 0;">
           <thead style="background: rgba(148, 163, 184, 0.05);">
-            <tr><th style="font-size: 10px; padding: 8px;">المعرف</th><th style="font-size: 10px; padding: 8px;">الخطر</th><th style="font-size: 10px; padding: 8px;">المصدر</th><th style="font-size: 10px; padding: 8px;">إجراء</th></tr>
+            <tr><th style="font-size: 10px; padding: 8px;">العميل</th><th style="font-size: 10px; padding: 8px;">الخطر</th><th style="font-size: 10px; padding: 8px;">المصدر</th><th style="font-size: 10px; padding: 8px;">إجراء</th></tr>
           </thead>
           <tbody>
             ${riskiest.map(c => `
               <tr>
-                <td style="padding: 8px; font-size: 12px;"><strong>${c.customer_id.substring(0, 14)}${c.customer_id.length > 14 ? '..' : ''}</strong></td>
+                <td style="padding: 8px; font-size: 12px;"><strong>${escapeHtml(c.name || c.customer_id).substring(0, 14)}${(c.name || c.customer_id).length > 14 ? '..' : ''}</strong><br/><small style="color: var(--muted); font-weight: normal; font-size: 10px;">${escapeHtml(c.customer_id).substring(0, 14)}</small></td>
                 <td style="padding: 8px;"><span class="badge ${riskClass(c.priority, c.risk_percentage)}" style="font-size: 10px; min-height: 20px; padding: 0 6px;">${c.risk_percentage}%</span></td>
                 <td style="padding: 8px;"><small style="font-size: 10px; color: var(--muted);">${c.connector_source || 'CSV'}</small></td>
                 <td style="padding: 8px;"><button class="small-button text" onclick="loadIntoForm('${c.customer_id}')" style="font-size: 10px; height: 22px; padding: 0 6px;">تجربة</button></td>

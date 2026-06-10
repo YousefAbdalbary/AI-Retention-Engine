@@ -89,6 +89,7 @@ async def dashboard_overview():
         "alerts": [
             {
                 "customer_id": row["customer_id"],
+                "name": row.get("name", row["customer_id"]),
                 "risk": row["risk"],
                 "priority": row["priority"],
                 "message": row.get("llm_analysis", {}).get("recommended_actions_ar", [""])[0] if row.get("llm_analysis") else "تحليل العميل مطلوب",
@@ -201,7 +202,7 @@ async def realtime_updates():
         "alerts": [
             {
                 "title": "AI intervention triggered",
-                "detail": f"{row['customer_id']} requires {row['priority']} action",
+                "detail": f"{row.get('name', row['customer_id'])} requires {row['priority']} action",
             }
             for row in sample[:3]
         ],
@@ -210,7 +211,7 @@ async def realtime_updates():
                 "timestamp": (
                     datetime.now(timezone.utc) - timedelta(seconds=i * 38)
                 ).isoformat(),
-                "message": f"Retention workflow evaluated for {row['customer_id']}",
+                "message": f"Retention workflow evaluated for {row.get('name', row['customer_id'])}",
             }
             for i, row in enumerate(sample)
         ],
