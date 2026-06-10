@@ -1,0 +1,21 @@
+User ID,Name,Email,Industry,Contract,Segment,Avg Plan Price,Total Paid,Transactions,Tenure (Days),First Purchase,Last Activity,Days Since Activity,Auto Renewals,Cancellations,Cancel Rate,Payment Failures,Support Tickets,NPS Score,Feature Usage %,Emails Sent,Emails Opened,Email Open Rate
+cust_001,Tariq Mahmoud,tariq.mahmoud1@example.com,Finance,Monthly,Enterprise,349.99,6647.37,19,508,2025-01-17,2026-05-19,21,17,0,0.0,0,0,3,48.4,7,0,0.0
+cust_002,Sara Nasser,sara.nasser2@example.com,Finance,Monthly,At-Risk,149.99,8111.91,54,1664,2021-11-18,2026-02-14,115,21,2,0.037,0,5,7,24.6,2,1,0.5
+cust_003,Layla Ali,layla.ali3@example.com,Manufacturing,Annual,VIP,799.99,1598.1,2,95,2026-03-06,2026-03-15,86,1,0,0.0,0,3,9,68.8,11,9,0.818
+cust_004,Dina Ibrahim,dina.ibrahim4@example.com,E-Commerce,Monthly,Churned,99.99,5905.75,59,1781,2021-07-24,2026-05-31,9,53,2,0.034,0,1,9,59.1,20,2,0.1
+cust_005,Khalid Salem,khalid.salem5@example.com,Healthcare,Monthly,Churned,299.99,8711.91,29,784,2024-04-16,2026-05-14,26,7,2,0.069,2,3,6,95.4,1,1,1.0
+cust_006,Dina Farouk,dina.farouk6@example.com,E-Commerce,Annual,Growth,299.99,1506.42,5,1349,2022-09-29,2026-04-18,52,2,1,0.2,0,2,6,72.9,18,13,0.722
+cust_007,Rana Yousef,rana.yousef7@example.com,E-Commerce,Biennial,VIP,149.99,4966.2,33,1050,2023-07-25,2026-04-18,52,9,1,0.03,1,1,2,54.8,12,9,0.75
+cust_008,Mohamed Yousef,mohamed.yousef8@example.com,SaaS,Annual,At-Risk,1200.0,4814.21,4,1403,2022-08-06,2026-02-10,119,2,0,0.0,0,0,0,80.4,8,8,1.0
+cust_009,Rana Hassan,rana.hassan9@example.com,Finance,Biennial,Enterprise,999.99,58999.38,59,1730,2021-09-13,2026-03-29,72,23,1,0.017,0,3,9,69.5,0,0,0.0
+cust_010,Rana Yousef,rana.yousef10@example.com,E-Commerce,Annual,At-Risk,1500.0,3018.67,2,125,2026-02-04,2026-05-17,23,0,2,1.0,0,0,10,67.3,4,1,0.25
+cust_011,Sara Mahmoud,sara.mahmoud11@example.com,Education,Annual,At-Risk,49.99,213.84,4,873,2024-01-18,2026-01-14,146,1,2,0.5,0,2,7,57.9,16,14,0.875
+cust_012,Tariq Ibrahim,tariq.ibrahim12@example.com,E-Commerce,Monthly,New,299.99,1196.43,4,21,2026-05-19,2026-06-03,6,0,0,0.0,2,0,6,72.9,15,6,0.4
+cust_013,Ahmed Ali,ahmed.ali13@example.com,Education,Biennial,Enterprise,499.99,16514.86,33,975,2023-10-08,2026-05-17,23,12,0,0.0,0,1,8,85.0,14,13,0.929
+cust_014,Ahmed Yousef,ahmed.yousef14@example.com,E-Commerce,Monthly,Churned,699.99,8405.43,12,396,2025-05-09,2026-04-13,57,4,3,0.25,0,4,8,67.0,17,3,0.176
+cust_015,Rana Salem,rana.salem15@example.com,Manufacturing,Biennial,Churned,799.99,47206.55,59,1745,2021-08-29,2026-05-18,22,13,3,0.051,2,0,0,10.5,12,4,0.333
+cust_016,Mohamed Hassan,mohamed.hassan16@example.com,Retail,Annual,Enterprise,1500.0,4500.44,3,1003,2023-09-10,2026-05-26,14,0,0,0.0,1,0,9,78.4,16,16,1.0
+cust_017,Khalid Zaki,khalid.zaki17@example.com,E-Commerce,Monthly,Enterprise,1500.0,10516.55,7,147,2026-01-13,2026-04-05,65,3,0,0.0,3,2,9,39.0,1,0,0.0
+cust_018,Dina Ali,dina.ali18@example.com,Finance,Annual,At-Risk,99.99,111.78,1,495,2025-01-30,2026-05-15,25,0,1,1.0,0,3,3,48.0,14,9,0.643
+cust_019,Ahmed Yousef,ahmed.yousef19@example.com,Finance,Monthly,At-Risk,29.99,226.91,7,278,2025-09-04,2026-01-27,133,2,2,0.286,0,3,9,46.0,19,16,0.842
+cust_020,Rana Salem,rana.salem20@example.com,SaaS,Monthly,Enterprise,1200.0,7201.81,6,226,2025-10-26,2026-03-13,88,4,1,0.167,1,0,9,83.1,8,8,1.0

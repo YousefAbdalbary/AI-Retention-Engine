@@ -153,6 +153,7 @@ def send_retention_email(
                 "risk_level": risk_level,
                 "risk_pct": risk_pct,
                 "subject": subject,
+                "html_body": html_body,
                 "status": "SENT",
                 "attempts": attempt,
             }

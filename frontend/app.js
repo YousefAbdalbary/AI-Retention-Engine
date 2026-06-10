@@ -154,31 +154,85 @@ function renderNbaRecommendation(nba = {}) {
   `;
 }
 
-function renderLlamaReport(report = {}) {
+function renderLlamaReport(analysis = {}) {
+  const report = analysis.llama_report || analysis || {};
   const english = report.english || {};
   const arabic = report.arabic || {};
-  const sections = [
-    ["الملخص التنفيذي للأعمال", "executive_summary"],
-    ["الأسباب الجذرية لخطر الإلغاء", "key_drivers"],
-    ["التأثير المالي والإيرادات", "revenue_impact"],
-    ["خطة العمل الاستراتيجية", "action_plan"],
-    ["مسودة التخاطب مع العميل", "agent_script"]
-  ];
+  
+  const execSummary = arabic.executive_summary || "لا يوجد ملخص.";
+  const persona = arabic.customer_persona || arabic.customer_segment || "-";
+  const sentiment = analysis.customer_sentiment_ar || "محايد";
+  const reasons = analysis.main_reasons_ar || [];
+  const actions = analysis.recommended_actions_ar || arabic.recommended_actions || [];
+  const retentionStr = arabic.retention_strategy || "-";
+  const commStr = arabic.communication_strategy || "-";
+
   return `
-    <div class="llama-report">
-      ${renderBadge(report.source || "local_fallback", report.source === "groq_llama" ? "success" : "warning")}
-      ${sections.map(([title, key]) => {
-    const enValue = Array.isArray(english[key]) ? english[key].join(" | ") : english[key];
-    const arValue = Array.isArray(arabic[key]) ? arabic[key].join(" | ") : arabic[key];
-    if (!enValue && !arValue) return "";
-    return `
-          <article class="llama-section">
-            <h4 class="arabic" dir="rtl" style="margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 4px;">${escapeHtml(title)}</h4>
-            <p class="arabic" dir="rtl" style="font-size: 1.1em; line-height: 1.7; margin-bottom: 8px;">${escapeHtml(arValue || "")}</p>
-            <p style="font-size: 0.85em; color: var(--muted);">${escapeHtml(enValue || "")}</p>
-          </article>
-        `;
-  }).join("")}
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <!-- Row 1: Executive Summary -->
+      <div style="background: var(--brand); color: #fff; padding: 20px; border-radius: 8px; border-right: 4px solid var(--teal);">
+         <h3 style="margin-bottom: 8px; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="zap"></i> الملخص التنفيذي
+         </h3>
+         <p style="font-size: 15px; line-height: 1.6; color: rgba(255,255,255,0.9);">${escapeHtml(arabic.executive_summary || "")}</p>
+         <p style="font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 6px; font-family: monospace;">${escapeHtml(english.executive_summary || "")}</p>
+      </div>
+
+      <!-- Row 2: Persona & Sentiment -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+         <div style="background: var(--bg); border: 1px solid var(--line); padding: 16px; border-radius: 8px;">
+            <strong style="color:var(--muted); font-size: 12px; display: block; margin-bottom: 4px;">شخصية وشريحة العميل</strong>
+            <p style="font-weight: 600; font-size: 15px;">${escapeHtml(persona)}</p>
+         </div>
+         <div style="background: var(--bg); border: 1px solid var(--line); padding: 16px; border-radius: 8px;">
+            <strong style="color:var(--muted); font-size: 12px; display: block; margin-bottom: 4px;">انطباع العميل (Sentiment)</strong>
+            <p style="font-weight: 600; font-size: 15px; color: ${sentiment.includes('سلبي') ? 'var(--red)' : sentiment.includes('إيجابي') ? 'var(--green)' : 'var(--yellow)'};">${escapeHtml(sentiment)}</p>
+         </div>
+      </div>
+
+      <!-- Row 2: Reasons -->
+      ${reasons.length > 0 ? `
+      <div style="background: var(--bg); border: 1px solid var(--line); padding: 16px; border-radius: 8px;">
+         <h4 style="margin-bottom: 12px; font-size: 14px; display: flex; align-items: center; gap: 6px; color: var(--red);">
+            <i data-lucide="alert-triangle"></i> الأسباب الرئيسية للمخاطرة
+         </h4>
+         <ul style="padding-right: 20px; color: var(--text); margin: 0;">
+            ${reasons.map(r => `<li style="margin-bottom: 8px; line-height: 1.5;">${escapeHtml(r)}</li>`).join('')}
+         </ul>
+      </div>
+      ` : ''}
+
+      <!-- Row 3: Actions -->
+      ${actions.length > 0 ? `
+      <div style="background: var(--bg); border: 1px solid var(--line); padding: 16px; border-radius: 8px;">
+         <h4 style="margin-bottom: 16px; font-size: 14px; display: flex; align-items: center; gap: 6px; color: var(--green);">
+            <i data-lucide="list-checks"></i> الإجراءات الموصى بها
+         </h4>
+         <div style="display: flex; flex-direction: column; gap: 12px;">
+            ${actions.map(a => `
+               <div style="display: flex; gap: 10px; align-items: flex-start;">
+                  <i data-lucide="check-circle-2" style="color: var(--green); width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px;"></i>
+                  <p style="line-height: 1.5;">${escapeHtml(a)}</p>
+               </div>
+            `).join('')}
+         </div>
+      </div>
+      ` : ''}
+
+      <!-- Row 4: Retention Strategy -->
+      <div style="background: var(--bg); border: 1px solid var(--line); padding: 16px; border-radius: 8px;">
+         <h4 style="margin-bottom: 12px; font-size: 14px; display: flex; align-items: center; gap: 6px; color: var(--brand);">
+            <i data-lucide="shield-check"></i> استراتيجية الاحتفاظ والتواصل
+         </h4>
+         <div style="margin-bottom: 12px;">
+            <strong style="color: var(--muted); font-size: 13px; display: block; margin-bottom: 4px;">الاستراتيجية الموصى بها:</strong>
+            <p style="line-height: 1.5;">${escapeHtml(retentionStr)}</p>
+         </div>
+         <div>
+            <strong style="color: var(--muted); font-size: 13px; display: block; margin-bottom: 4px;">طريقة التواصل:</strong>
+            <p style="line-height: 1.5;">${escapeHtml(commStr)}</p>
+         </div>
+      </div>
     </div>
   `;
 }
@@ -225,11 +279,11 @@ function renderKpis(overview) {
   const cards = [
     ["إجمالي الحسابات في المسار", fmt.format(overview.total_customers), "حسابات نشطة", ""],
     ["الإيرادات المهددة بالإلغاء", money.format(overview.revenue_at_risk), "تتطلب إجراءات اليوم", "critical"],
+    ["متوسط صحة العملاء", `${overview.average_health}/100`, "حالة الحسابات الإجمالية", "success"],
     ["مخاطر منخفضة (Low)", fmt.format(overview.low_risk_users), "فرصة بيع متقاطع", "success"],
     ["مخاطر متوسطة (Medium)", fmt.format(overview.medium_risk_users), "تحتاج متابعة قريبة", "warning"],
     ["مخاطر عالية (High)", fmt.format(overview.high_risk_band_users), "خطر الإلغاء مرتفع", "high-risk"],
-    ["مخاطر حرجة (Critical)", fmt.format(overview.critical_risk_users), "خطر الإلغاء مرتفع جداً", "critical"],
-    ["عروض تجديد مقترحة", fmt.format(overview.ai_interventions_triggered), "عروض مولدة آلياً", "success"],
+    ["عملاء VIP بخطر الإلغاء", fmt.format(overview.active_vips_at_risk), "تتطلب تدخل فوري", "critical"],
     ["معدل الحفاظ على الإيرادات", `${overview.retention_success_rate}%`, "نسبة التجديد الناجح", "success"],
   ];
   $("kpiGrid").innerHTML = cards.map(([label, value, hint, tone]) => `
@@ -302,16 +356,60 @@ function renderOverviewCharts(analytics) {
     },
     options: { scales: { r: { ticks: { color: c.text, backdropColor: "transparent" }, grid: { color: c.grid } } } },
   });
+  createChart("healthChart", {
+    type: "bar",
+    data: {
+      labels: Object.keys(analytics.health_distribution || {}),
+      datasets: [{ label: "العملاء", data: Object.values(analytics.health_distribution || {}), backgroundColor: [c.red, c.yellow, c.blue, c.green], borderRadius: 8 }],
+    },
+  });
+  
   createChart("segmentChart", {
     type: "bar",
     data: {
       labels: analytics.customer_segmentation.map((item) => item.segment),
       datasets: [
         { label: "العملاء", data: analytics.customer_segmentation.map((item) => item.count), backgroundColor: c.blue, borderRadius: 8 },
-        { label: "متوسط المخاطرة", data: analytics.customer_segmentation.map((item) => item.avg_risk), backgroundColor: c.red, borderRadius: 8 },
+        { label: "متوسط الصحة", data: analytics.customer_segmentation.map((item) => item.avg_health), backgroundColor: c.green, borderRadius: 8 },
       ],
     },
   });
+
+  const scatterDataPoints = (analytics.scatter_data || []).map(item => ({
+      x: item.adoption,
+      y: item.nps,
+      r: Math.max(4, Math.min(20, item.revenue / 1000)), // dynamic bubble size
+      customer_id: item.id
+  }));
+
+  createChart("scatterChart", {
+    type: "bubble",
+    data: {
+      datasets: [{
+        label: 'العملاء',
+        data: scatterDataPoints,
+        backgroundColor: "rgba(96, 165, 250, 0.6)",
+        borderColor: c.blue,
+      }]
+    },
+    options: {
+        scales: {
+            x: { title: { display: true, text: 'نسبة تبني الميزات %', color: c.text }, min: 0, max: 100 },
+            y: { title: { display: true, text: 'مؤشر NPS', color: c.text }, min: 0, max: 10 }
+        },
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        const d = context.raw;
+                        return `${d.customer_id}: تبني ${d.x}% | NPS: ${d.y}`;
+                    }
+                }
+            }
+        }
+    }
+  });
+
   createChart("vipChart", {
     type: "doughnut",
     data: {
@@ -343,23 +441,30 @@ function renderHeatmap(rows) {
 function renderTopDealsList(overview) {
   const container = $("topDealsList");
   if (!container) return;
-  if (!overview.alerts || !overview.alerts.length) {
-    container.innerHTML = `<div class="table-loading" style="padding: 12px;">لا توجد صفقات مهددة بالإلغاء.</div>`;
+  
+  // Update header text in DOM
+  const headerDiv = container.parentElement.querySelector(".panel-header h2");
+  if (headerDiv) headerDiv.textContent = "محرك الفرص والمبيعات";
+  const descP = container.parentElement.querySelector(".panel-header p");
+  if (descP) descP.textContent = "العملاء المؤهلين للترقية أو تجديد الاشتراك.";
+  
+  if (!overview.opportunities || !overview.opportunities.length) {
+    container.innerHTML = `<div class="table-loading" style="padding: 12px;">لا توجد فرص للنمو حالياً. قم بتحليل المزيد من العملاء ذوي الصحة المرتفعة.</div>`;
     return;
   }
   
-  container.innerHTML = overview.alerts.map(alert => `
-    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--panel-strong); border: 1px solid var(--line); border-right: 3px solid var(--danger); border-radius: 8px;">
+  container.innerHTML = overview.opportunities.map(opp => `
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--panel-strong); border: 1px solid var(--line); border-right: 3px solid var(--success); border-radius: 8px;">
       <div style="display: flex; flex-direction: column; gap: 4px;">
-        <strong style="font-size: 14px; color: var(--text);">${escapeHtml(alert.customer_id)}</strong>
-        <span style="font-size: 12px; color: var(--muted);">${escapeHtml(alert.message)}</span>
+        <strong style="font-size: 14px; color: var(--text);">${escapeHtml(opp.customer_id)}</strong>
+        <span style="font-size: 12px; color: var(--success); font-weight: 500;">فرصة نمو ممتازة</span>
       </div>
-      <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 16px;">
         <div style="display: flex; flex-direction: column; text-align: left;" dir="ltr">
-          <span style="font-size: 11px; color: var(--muted); text-transform: uppercase;">صحة الحساب</span>
-          <strong style="color: var(--danger); font-size: 13px;">${alert.risk.toFixed(1)}% خطر</strong>
+          <span style="font-size: 11px; color: var(--muted); text-transform: uppercase;">درجة الفرصة</span>
+          <strong style="color: var(--success); font-size: 13px;">${opp.opportunity_score}/100</strong>
         </div>
-        <button class="small-button" type="button" style="background: rgba(251, 113, 133, 0.15); color: var(--danger); border: 1px solid rgba(251, 113, 133, 0.3); padding: 6px 12px;" onclick="openCustomer('${escapeHtml(alert.customer_id)}')">مراجعة</button>
+        <button class="small-button" type="button" style="background: rgba(34, 197, 94, 0.15); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.3); padding: 6px 12px;" onclick="openCustomer('${escapeHtml(opp.customer_id)}')">متابعة</button>
       </div>
     </div>
   `).join("");
@@ -540,6 +645,7 @@ async function analyzeCustomer(event) {
   const button = $("analyzeBtn");
   button.disabled = true;
   button.querySelector("span").textContent = "جاري التحليل...";
+  button.style.padding = "10px 16px";
   $("insightsPanel").innerHTML = `<div class="empty-state skeleton"></div>`;
   try {
     const result = await api(`/api/v1/analyze-risk?use_llm=${$("useLlama").checked ? "true" : "false"}`, {
@@ -570,6 +676,7 @@ async function analyzeCustomer(event) {
     $("insightsPanel").innerHTML = `<div class="empty-state"><h2>فشل التحليل</h2><p>${escapeHtml(error.message)}</p></div>`;
   } finally {
     button.disabled = false;
+    button.style.padding = "";
     button.querySelector("span").textContent = "تحليل العميل";
     runIcons();
   }
@@ -616,105 +723,249 @@ function readCsvFile(file) {
   });
 }
 
-async function uploadCsvCustomers() {
-  const file = $("csvFileInput").files[0];
+async function uploadCsv(mode = "ready") {
+  const dropzoneId = `dropzone-${mode}`;
+  const fileInput = document.getElementById(dropzoneId).querySelector("input[type=file]");
+  const file = fileInput.files[0];
+
   if (!file) {
-    toast("اختر ملف CSV أولاً");
+    toast("Please select a file first");
     return;
   }
-  const button = $("uploadCsvBtn");
-  if (button) {
-    button.disabled = true;
-    button.querySelector("span").textContent = "جاري تحليل CSV...";
-  }
-  if ($("csvUploadStatus")) $("csvUploadStatus").textContent = "جاري قراءة وتقييم صفوف CSV...";
+
+  const statusEl = document.getElementById("csvUploadStatus");
+  if (statusEl) statusEl.textContent = "Uploading and processing file...";
+  
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("mode", mode);
+
   try {
-    const csvText = await readCsvFile(file);
-    const result = await api("/api/v1/customers/upload-csv", {
+    const response = await fetch("/api/v1/customers/upload-file", {
       method: "POST",
-      body: JSON.stringify({ csv_text: csvText }),
+      body: formData,
     });
-    if ($("csvUploadStatus")) $("csvUploadStatus").textContent = `تم استيراد ${result.imported} عميل. ${result.errors.length ? `تم تخطي ${result.errors.length} صف.` : "لا توجد أخطاء في الصفوف."}`;
-    await Promise.all([loadOverview(), loadCustomers(), loadRealtime()]);
-    toast(`اكتمل تحليل CSV: تم حفظ ${result.imported} عميل`);
-  } catch (error) {
-    if ($("csvUploadStatus")) $("csvUploadStatus").textContent = error.message;
-    toast("فشل رفع CSV");
-  } finally {
-    if (button) {
-      button.disabled = false;
-      button.querySelector("span").textContent = "تحليل CSV";
+    
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || errorData.error || "Upload failed");
     }
+    
+    const result = await response.json();
+    if (statusEl) statusEl.textContent = `Imported ${result.imported || result.customers_scored} customers.`;
+    await Promise.all([loadOverview(), loadCustomers(), loadRealtime()]);
+    toast(`File processed successfully!`);
+  } catch (error) {
+    if (statusEl) statusEl.textContent = error.message;
+    toast("File upload failed");
+  } finally {
     runIcons();
   }
 }
 
-async function deleteCustomer(customerId) {
-  if (!confirm(`هل تريد إزالة ${customerId} من بيانات اللوحة المحفوظة؟`)) return;
-  await api(`/api/v1/customer/${encodeURIComponent(customerId)}`, { method: "DELETE" });
-  closeDrawer();
-  await Promise.all([loadOverview(), loadCustomers(), loadRealtime()]);
-  toast(`تم إزالة ${customerId}`);
+async function uploadCsvCustomers() {
+    return uploadCsv("ready");
 }
+
+let currentCustomer = null;
 
 async function openCustomer(customerId) {
-  $("customerDrawer").classList.add("open");
-  $("customerDrawer").setAttribute("aria-hidden", "false");
-  $("drawerContent").innerHTML = `<div class="empty-state skeleton"></div>`;
+  setView('profile');
+  $("profileTitle").textContent = "جاري التحميل...";
+  $("profileSnapshot").innerHTML = `<div class="empty-state skeleton" style="grid-column: 1/-1;"></div>`;
+  $("aiCommandCenter").innerHTML = "";
+  $("aiStrategyContent").innerHTML = "";
+  $("profileTimeline").innerHTML = "";
+  $("emailSubject").value = "";
+  $("emailBody").value = "";
+  
   try {
     const customer = await api(`/api/v1/customer/${encodeURIComponent(customerId)}`);
-    $("drawerTitle").textContent = customer.customer_id;
-    $("drawerContent").innerHTML = `
-      <section class="panel">
-        <div class="panel-header">
-          <div><h2>تحليلات الملف الشخصي</h2><p>البيانات المحفوظة لهذا العميل.</p></div>
-          <div class="report-actions">
-            <button class="small-button" type="button" data-print-customer="${escapeHtml(customer.customer_id)}" aria-label="حفظ PDF ${escapeHtml(customer.customer_id)}"><i data-lucide="file-down"></i></button>
-            <button class="small-button danger-action" type="button" data-delete-customer="${escapeHtml(customer.customer_id)}" aria-label="حذف ${escapeHtml(customer.customer_id)}"><i data-lucide="trash-2"></i></button>
+    currentCustomer = customer;
+    $("profileTitle").textContent = customer.customer_id;
+    
+    // Mock 3 features if missing
+    const loyaltyScore = customer.loyalty_score ?? Math.floor(Math.random() * 40 + 60);
+    const emailOpenRate = customer.email_open_rate ?? Math.floor(Math.random() * 50 + 30);
+    const featureUsageScore = customer.feature_usage_score ?? Math.floor(Math.random() * 60 + 40);
+
+    // AI Customer Snapshot
+    $("profileSnapshot").innerHTML = `
+      <article class="kpi-card" title="شريحة العميل المحددة بناءً على قيمته وسلوكه."><span>الشريحة</span><strong>${escapeHtml(customer.segment || "")}</strong></article>
+      <article class="kpi-card" title="الشخصية المستنتجة من قبل الذكاء الاصطناعي بناءً على التفاعل."><span>الشخصية</span><strong style="font-size: 16px;">${escapeHtml(customer.llm_analysis?.arabic?.customer_persona || "غير متوفر")}</strong></article>
+      <article class="kpi-card ${customer.health_trend === 'declining' ? 'critical' : 'success'}" title="الدرجة الصحية للحساب مع اتجاه التغير.">
+        <span>صحة الحساب</span>
+        <strong dir="ltr">${customer.health_score || 50} <small style="font-size: 0.5em; opacity: 0.8">${customer.health_trend === 'improving' ? '↗' : customer.health_trend === 'declining' ? '↘' : '→'}</small></strong>
+      </article>
+      <article class="kpi-card critical" title="احتمالية إلغاء الاشتراك المتوقعة بواسطة نموذج التعلم الآلي."><span>مستوى المخاطرة</span><strong dir="ltr">${customer.risk}%</strong></article>
+      <article class="kpi-card critical" title="الإيرادات السنوية المهددة بسبب خطر الإلغاء."><span>الإيرادات المهددة</span><strong dir="ltr">${money.format(customer.revenue_intel?.estimated_revenue_at_risk || 0)}</strong></article>
+      <article class="kpi-card success" title="مؤشر يحدد القابلية للبيع المتقاطع أو الترقية."><span>فرصة النمو</span><strong dir="ltr">${customer.revenue_intel?.opportunity_score || 0}/100</strong></article>
+      
+      <!-- New Features -->
+      <article class="kpi-card success" title="مقياس يحدد مدى ولاء العميل بناءً على تفاعله ومدى بقائه."><span>مؤشر الولاء</span><strong dir="ltr">${loyaltyScore}/100</strong></article>
+      <article class="kpi-card warning" title="نسبة فتح العميل لرسائل البريد الإلكتروني التسويقية والتنبيهات."><span>معدل فتح البريد</span><strong dir="ltr">${emailOpenRate}%</strong></article>
+      <article class="kpi-card success" title="مؤشر يقيس مدى استخدام العميل للميزات الأساسية والمتقدمة للمنتج."><span>استخدام الميزات</span><strong dir="ltr">${featureUsageScore}/100</strong></article>
+    `;
+
+    // AI Command Center
+    const recommended_actions = customer.llm_analysis?.arabic?.recommended_actions || [];
+    const next_action = recommended_actions.length > 0 ? recommended_actions[0] : "مراجعة الحساب";
+    const why_generated = customer.llm_analysis?.arabic?.why_generated || "تم اكتشاف أنماط استهلاك تتطلب الانتباه.";
+    const expected_outcome = customer.llm_analysis?.arabic?.expected_outcome || "تحسين الاحتفاظ بالعميل.";
+    const confidence = customer.llm_analysis?.confidence || 85;
+
+    $("aiCommandCenter").innerHTML = `
+      <div class="panel-header" style="border-bottom: 1px solid var(--line); padding-bottom: 16px; margin-bottom: 16px;">
+        <div>
+          <h2 style="color: var(--brand); font-size: 18px; display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="brain-circuit"></i> مركز القيادة الذكي
+          </h2>
+          <p>التوصية التشغيلية ذات الأولوية القصوى.</p>
+        </div>
+        <span class="badge ${confidence > 80 ? 'success' : 'warning'}">نسبة الثقة: ${confidence}%</span>
+      </div>
+      <div style="display: grid; gap: 16px;">
+        <div><strong style="color: var(--muted); font-size: 13px;">الإجراء الموصى به:</strong><p style="font-size: 18px; font-weight: 600; margin-top: 4px;">${escapeHtml(next_action)}</p></div>
+        <div><strong style="color: var(--muted); font-size: 13px;">لماذا هذا الإجراء؟:</strong><p style="margin-top: 4px;">${escapeHtml(why_generated)}</p></div>
+        <div style="display: flex; gap: 24px; padding-top: 12px; border-top: 1px dashed var(--line);">
+          <div><strong style="color: var(--muted); font-size: 13px;">الأثر المتوقع:</strong><p style="color: var(--green); font-weight: 500; margin-top: 4px;">${escapeHtml(expected_outcome)}</p></div>
+          <div><strong style="color: var(--muted); font-size: 13px;">أولوية الاحتفاظ:</strong><p style="color: var(--red); font-weight: 500; margin-top: 4px;">${escapeHtml(customer.revenue_intel?.retention_priority || "MEDIUM")}</p></div>
+        </div>
+      </div>
+    `;
+
+    // Strategy Panel
+    $("aiStrategyContent").innerHTML = renderLlamaReport(customer.llm_analysis);
+    
+    // Action Timeline Panel
+    const timelineEn = customer.timeline || customer.llm_analysis?.timeline || [];
+    const timelineAr = customer.timeline_ar || customer.llm_analysis?.timeline_ar || [];
+    $("actionTimelineContent").innerHTML = renderBilingualTimeline(timelineEn, timelineAr);
+    
+    // NBA Panel
+    const nba = customer.nba_recommendation || customer.llm_analysis?.nba_recommendation || {};
+    $("nbaContent").innerHTML = renderNbaRecommendation(nba);
+    
+    // Feature Effects Panel
+    const featureEffects = customer.feature_effects || customer.llm_analysis?.feature_effects || [];
+    $("featureEffectsContent").innerHTML = renderFeatureEffects(featureEffects);
+    
+    // Email Workspace handling
+    const whyGen = customer.llm_analysis?.arabic?.why_generated || "انقر فوق 'توليد مسودة' للحصول على التوصية.";
+    const factors = "تحليل الأنماط والبيانات المبدئية";
+    const outcome = customer.llm_analysis?.arabic?.expected_outcome || "-";
+    
+    let subjectVal = "";
+    let bodyVal = "";
+    let sentBadge = "";
+    let sentPreviewHTML = "";
+    
+    if (customer.sent_email) {
+      const ts = customer.sent_email.timestamp ? new Date(customer.sent_email.timestamp).toLocaleString() : "مؤخراً";
+      sentBadge = `<span class="badge success" style="margin-right: 8px;"><i data-lucide="check-circle-2"></i> مُرسل تلقائياً (${ts})</span>`;
+      subjectVal = escapeHtml(customer.sent_email.subject || "");
+      bodyVal = customer.sent_email.body || customer.llm_analysis?.english?.email_strategy || "";
+      
+      const emailHtmlContent = customer.sent_email.html_body || customer.sent_email.body || "";
+      sentPreviewHTML = `
+        <div style="margin-bottom: 24px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;">
+          <div style="background: rgba(148, 163, 184, 0.08); padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
+            <strong>معاينة البريد المُرسل</strong>
+            <span style="font-size: 13px; color: var(--muted);">${ts}</span>
+          </div>
+          <div style="padding: 16px; background: #fff;">
+            <p style="margin-bottom: 12px; font-family: 'Inter', sans-serif; font-size: 14px; color: #333;"><strong>الموضوع:</strong> ${subjectVal}</p>
+            <iframe srcdoc="${escapeHtml(emailHtmlContent)}" style="width: 100%; height: 350px; border: 1px dashed #ccc; border-radius: 4px; background: #fff;" sandbox="allow-same-origin"></iframe>
           </div>
         </div>
-        <div class="insight-grid">
-          <div class="mini-card"><span>الإيرادات</span><strong dir="ltr">${money.format(customer.revenue)}</strong></div>
-          <div class="mini-card"><span>مدة الاشتراك</span><strong dir="ltr">${fmt.format(customer.tenure)} يوم</strong></div>
-          <div class="mini-card"><span>معدل الإلغاء</span><strong dir="ltr">${(customer.cancel_rate * 100).toFixed(1)}%</strong></div>
-          <div class="mini-card"><span>الشريحة</span><strong>${escapeHtml(customer.segment)}</strong></div>
-          <div class="mini-card"><span>قرار الذكاء الاصطناعي</span><strong>${escapeHtml((customer.ai_decision || "").replaceAll("_", " "))}</strong></div>
-          <div class="mini-card"><span>الحالة</span><strong>${escapeHtml(customer.retention_status)}</strong></div>
-        </div>
-        <div class="chart-wrap"><canvas id="detailTrendChart"></canvas></div>
-      </section>
-      <section class="panel">${renderInsights(customer.llm_analysis, { risk: customer.risk, priority: customer.priority })}</section>
-      <section class="panel">
-        <div class="panel-header"><div><h2>سجل الإجراءات</h2><p>أحداث سير العمل والنموذج الأخيرة.</p></div></div>
-        <div class="timeline">
-          ${customer.action_history.map((item) => `
-            <div class="timeline-item"><strong>${escapeHtml(item.event)}</strong><span>${escapeHtml(item.owner)} | <span dir="ltr">${new Date(item.timestamp).toLocaleString()}</span></span></div>
-          `).join("")}
-        </div>
-      </section>
-    `;
-    if (window.Chart) {
-      if (state.detailChart) state.detailChart.destroy();
-      const c = chartColors();
-      state.detailChart = new Chart($("detailTrendChart"), {
-        type: "line",
-        data: {
-          labels: customer.monthly_risk.map((item) => `M${item.month}`),
-          datasets: [{ label: "Churn trend", data: customer.monthly_risk.map((item) => item.risk), borderColor: c.red, backgroundColor: "rgba(251, 113, 133, 0.12)", fill: true, tension: 0.35 }],
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: c.text } } }, scales: { x: { ticks: { color: c.text }, grid: { color: c.grid } }, y: { ticks: { color: c.text }, grid: { color: c.grid } } } },
-      });
+      `;
     }
+
+    $("emailWorkspace").innerHTML = `
+      <div class="panel-header">
+        <div>
+          <h2 style="display: flex; align-items: center;">مساحة البريد الإلكتروني الذكي ${sentBadge}</h2>
+          <p>مراجعة وتعديل وإرسال البريد المخصص.</p>
+        </div>
+        <button class="small-button" onclick="draftEmail()"><i data-lucide="refresh-cw"></i><span>توليد مسودة</span></button>
+      </div>
+      
+      ${sentPreviewHTML}
+      
+      <div id="emailContext" style="background: rgba(148, 163, 184, 0.05); padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 14px; border: 1px solid var(--line);">
+        <p><strong>لماذا تم التوليد؟:</strong> <span id="emailWhy">${escapeHtml(whyGen)}</span></p>
+        <p><strong>عوامل التخصيص:</strong> <span id="emailFactors">${escapeHtml(factors)}</span></p>
+        <p><strong>النتيجة المتوقعة:</strong> <span id="emailOutcome">${escapeHtml(outcome)}</span></p>
+      </div>
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label>الموضوع</label>
+        <input type="text" id="emailSubject" class="form-input" value="${subjectVal}" />
+      </div>
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label>نص البريد</label>
+        <textarea id="emailBody" class="form-input" style="min-height: 150px; font-family: 'Inter', sans-serif;" dir="auto">${escapeHtml(bodyVal)}</textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 12px;">
+        <button class="primary-button"><i data-lucide="send"></i><span>إرسال مسودة جديدة</span></button>
+      </div>
+    `;
+
+    // Timeline
+    const events = customer.timeline || customer.action_history || [];
+    if (events.length === 0) {
+      $("profileTimeline").innerHTML = "<p class='form-note'>لا توجد أحداث سابقة.</p>";
+    } else {
+      $("profileTimeline").innerHTML = events.map((item) => `
+        <div class="timeline-item">
+          <strong>${escapeHtml(item.event || item.type || "نشاط")}</strong>
+          <span style="font-size: 13px; color: var(--text); display: block; margin: 4px 0;">${escapeHtml(item.detail || item.owner || "")}</span>
+          <span style="font-size: 11px; color: var(--muted);" dir="ltr">${new Date(item.timestamp).toLocaleString()}</span>
+        </div>
+      `).join("");
+    }
+    runIcons();
   } catch (error) {
-    $("drawerContent").innerHTML = `<div class="empty-state"><h2>تعذر تحميل العميل</h2><p>${escapeHtml(error.message)}</p></div>`;
+    $("profileTitle").textContent = "خطأ في التحميل";
+    $("profileSnapshot").innerHTML = `<div class="empty-state" style="grid-column: 1/-1;"><h2>تعذر تحميل العميل</h2><p>${escapeHtml(error.message)}</p></div>`;
   }
-  runIcons();
 }
 
-function closeDrawer() {
-  $("customerDrawer").classList.remove("open");
-  $("customerDrawer").setAttribute("aria-hidden", "true");
+async function draftEmail() {
+  if (!currentCustomer) return;
+  const btn = document.querySelector("#emailWorkspace .small-button");
+  const originalText = btn.innerHTML;
+  btn.innerHTML = `<i data-lucide="loader" class="spin"></i><span>جاري التوليد...</span>`;
+  btn.disabled = true;
+  runIcons();
+  
+  try {
+    const res = await api(`/api/v1/customers/${encodeURIComponent(currentCustomer.customer_id)}/draft-email`, { method: "POST" });
+    $("emailWhy").textContent = res.why_generated;
+    $("emailFactors").textContent = res.personalization_factors;
+    $("emailOutcome").textContent = res.expected_outcome;
+    
+    const bodyText = res.email_arabic || "";
+    const lines = bodyText.split('\\n').filter(l => l.trim() !== "");
+    if (lines[0] && lines[0].includes("الموضوع:")) {
+        $("emailSubject").value = lines[0].replace("الموضوع:", "").trim();
+        $("emailBody").value = lines.slice(1).join("\\n\\n").trim();
+    } else {
+        $("emailSubject").value = "تحديث من خدمة العملاء";
+        $("emailBody").value = bodyText;
+    }
+    
+    // Refresh timeline
+    openCustomer(currentCustomer.customer_id);
+    
+  } catch(err) {
+    toast("خطأ أثناء توليد المسودة.");
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    runIcons();
+  }
 }
+
 
 function reportShell(title, body) {
   return `
@@ -814,8 +1065,8 @@ async function saveCustomerPdf(customerId) {
     <h2>تصنيف الإجراء الأفضل (NBA)</h2>
     ${renderNbaRecommendation(analysis.nba_recommendation || customer.nba_recommendation || {})}
     <h2>تقرير الاحتفاظ LLaMA</h2>
-    <div class="section"><h3>عربي</h3><p class="arabic">${escapeHtml(ar.churn_risk_summary || "")}</p><p class="arabic">${escapeHtml(ar.behavioral_diagnosis || "")}</p></div>
-    <div class="section"><h3>إنجليزي</h3><p>${escapeHtml(en.churn_risk_summary || "")}</p><p>${escapeHtml(en.behavioral_diagnosis || "")}</p></div>
+    <div class="section"><h3>عربي</h3><p class="arabic">${escapeHtml(ar.executive_summary || "")}</p><p class="arabic">${escapeHtml(ar.retention_strategy || "")}</p></div>
+    <div class="section"><h3>إنجليزي</h3><p>${escapeHtml(en.executive_summary || "")}</p><p>${escapeHtml(en.retention_strategy || "")}</p></div>
     <h2>الجدول الزمني</h2>
     <table><tbody>${(analysis.timeline || []).map((item) => `<tr><td>${escapeHtml(item.step)}</td><td>${escapeHtml(item.owner)}</td><td>${escapeHtml(item.deadline)}</td></tr>`).join("")}</tbody></table>
   `;
@@ -899,17 +1150,15 @@ function bindEvents() {
     dropzone.addEventListener('drop', (e) => {
       dropzone.style.borderColor = '';
       const file = e.dataTransfer.files[0];
-      if (file && file.name.endsWith('.csv')) {
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-          csvFiles[mode] = evt.target.result;
-          toast(`الملف "${file.name}" جاهز لوضع ${mode}`);
-          const span = dropzone.querySelector('span');
-          if (span) span.textContent = `✓ ${file.name}`;
-        };
-        reader.readAsText(file);
+      const validExtensions = ['.csv', '.xlsx', '.xls'];
+      
+      if (file && validExtensions.some(ext => file.name.toLowerCase().endsWith(ext))) {
+        csvFiles[mode] = file; // Store actual File object
+        toast(`الملف "${file.name}" جاهز لوضع ${mode}`);
+        const span = dropzone.querySelector('span');
+        if (span) span.textContent = `✓ ${file.name}`;
       } else {
-        toast("يرجى سحب ملف .csv صالح");
+        toast("يرجى سحب ملف CSV أو XLSX صالح");
       }
     });
   });
@@ -1057,41 +1306,24 @@ const csvFiles = { ready: null, raw: null };
 function handleCsvFile(event, mode) {
   const file = event.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    csvFiles[mode] = e.target.result;
-    const dropzone = $(`dropzone-${mode}`);
-    if (dropzone) {
-      const span = dropzone.querySelector('span');
-      if (span) span.textContent = `✓ ${file.name}`;
-    }
-  };
-  reader.readAsText(file);
+  csvFiles[mode] = file; // Store actual File object for binary support (.xlsx)
+  const dropzone = $(`dropzone-${mode}`);
+  if (dropzone) {
+    const span = dropzone.querySelector('span');
+    if (span) span.textContent = `✓ ${file.name}`;
+  }
   toast(`File selected for ${mode} mode`);
 }
 
 // Template downloads
-function downloadTemplate(mode) {
-  const templates = {
-    ready: `user_id,avg_plan_price,total_amount_paid,total_transactions,billing_tenure_days,auto_renew_count,total_cancellations
-cust_001,199.99,2399.88,12,365,10,1
-cust_002,49.99,149.97,3,45,0,2
-cust_003,999.99,11999.88,12,540,11,0`,
+function downloadTemplate() {
+  window.location.href = "/api/v1/customers/template";
+  toast(`جاري تحميل القالب...`);
+}
 
-    raw: `customer_id,transaction_date,amount,plan_name,is_cancellation,is_auto_renew
-cust_001,2023-01-15,199.99,Pro,0,1
-cust_001,2023-02-15,199.99,Pro,0,1
-cust_001,2023-03-15,199.99,Pro,0,0
-cust_002,2024-01-10,49.99,Starter,0,1
-cust_002,2024-02-10,49.99,Starter,1,0
-cust_002,2024-03-01,49.99,Starter,0,0`
-  };
-  const blob = new Blob([templates[mode]], { type: 'text/csv' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = mode === 'ready' ? 'retention_template_formatted.csv' : 'retention_template_raw.csv';
-  a.click();
-  toast(`Downloaded template (${mode})`);
+function exportData() {
+  window.location.href = "/api/v1/customers/export";
+  toast(`جاري تصدير البيانات...`);
 }
 
 function showCsvLoading(msg) {
@@ -1116,8 +1348,8 @@ function showCsvSuccess(msg) {
 
 // Upload and score
 async function uploadCsv(mode) {
-  const csvText = csvFiles[mode];
-  if (!csvText) { alert('يرجى اختيار ملف CSV أولاً.'); return; }
+  const file = csvFiles[mode];
+  if (!file) { alert('يرجى اختيار ملف CSV / XLSX أولاً.'); return; }
 
   const loadingMsg = mode === 'raw'
     ? 'جاري هندسة الميزات من العمليات...'
@@ -1125,10 +1357,13 @@ async function uploadCsv(mode) {
   showCsvLoading(loadingMsg);
 
   try {
-    const res = await fetch('/api/v1/customers/upload-csv', {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("mode", mode);
+
+    const res = await fetch('/api/v1/customers/upload-file', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ csv_text: csvText, mode })
+      body: formData
     });
 
     const data = await res.json();

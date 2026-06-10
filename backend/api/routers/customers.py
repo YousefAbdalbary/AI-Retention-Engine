@@ -1,10 +1,13 @@
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, UploadFile, File, Form
+from fastapi.responses import JSONResponse
+import pandas as pd
 import csv
 import io
 import math
 from typing import Any
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
-from fastapi.responses import JSONResponse
-import pandas as pd
+import random
+import hashlib
+import datetime
 
 from models.schemas import CSVUploadPayload, CustomerData
 from services.ml_engine import (
@@ -21,10 +24,111 @@ from services.store import (
 )
 from services.email_service import send_retention_email
 from utils.helpers import sigmoid
-import random
 from core.config import logger
 
 router = APIRouter()
+
+@router.post("/customers/upload-file")
+async def upload_file_customers(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    mode: str = Form("ready")
+):
+    try:
+        content = await file.read()
+        filename = file.filename.lower()
+        
+        if filename.endswith(".xlsx") or filename.endswith(".xls"):
+            # openpyxl requires a file-like object for reading bytes
+            df = pd.read_excel(io.BytesIO(content), header=[0, 1] if "sample_100_clients" in filename else 0)
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = [col[1] if "Unnamed" in col[0] else col[0] + " - " + col[1] for col in df.columns]
+        else:
+            # Assume CSV
+            df = pd.read_csv(io.StringIO(content.decode("utf-8")))
+            
+        # Normalize columns
+        df.columns = [str(c).lower().strip() for c in df.columns]
+        
+        raw_rows = df.to_dict(orient="records")
+        imported = 0
+        errors = []
+        batch_customers_for_email = []
+        
+        for idx, row in enumerate(raw_rows):
+            clean_row = {k: v for k, v in row.items() if pd.notna(v)}
+            
+            # Extract basic ID mapping
+            user_id = str(
+                clean_row.get("user_id") or clean_row.get("profile - user id") or clean_row.get("user id") or f"UPLOAD-{imported+1}"
+            ).strip()
+            
+            # Map remaining fields roughly matching our dataset analysis
+            mapped = {
+                "user_id": user_id,
+                "name": clean_row.get("name") or clean_row.get("profile - name"),
+                "email": clean_row.get("email") or clean_row.get("profile - email"),
+                "industry": clean_row.get("industry") or clean_row.get("profile - industry"),
+                "contract": clean_row.get("contract") or clean_row.get("profile - contract"),
+                "segment": clean_row.get("segment") or clean_row.get("profile - segment"),
+                "avg_plan_price": clean_row.get("avg_plan_price") or clean_row.get("billing & usage - avg plan price") or clean_row.get("avg plan price"),
+                "total_transactions": clean_row.get("transactions") or clean_row.get("total_transactions") or clean_row.get("billing & usage - transactions"),
+                "auto_renew_count": clean_row.get("auto_renewals") or clean_row.get("auto_renew_count") or clean_row.get("engagement metrics - auto renewals"),
+                "total_cancellations": clean_row.get("cancellations") or clean_row.get("total_cancellations") or clean_row.get("engagement metrics - cancellations"),
+                "payment_failures": clean_row.get("payment_failures") or clean_row.get("engagement metrics - payment failures"),
+                "support_tickets": clean_row.get("support_tickets") or clean_row.get("health indicators - support tickets"),
+                "nps_score": clean_row.get("nps_score") or clean_row.get("health indicators - nps score"),
+                "feature_usage_pct": clean_row.get("feature_usage_pct") or clean_row.get("health indicators - feature usage %"),
+                "emails_sent": clean_row.get("emails_sent") or clean_row.get("health indicators - emails sent"),
+                "emails_opened": clean_row.get("emails_opened") or clean_row.get("health indicators - emails opened"),
+                "first_purchase": clean_row.get("first_purchase") or clean_row.get("billing & usage - first purchase"),
+                "last_activity": clean_row.get("last_activity") or clean_row.get("billing & usage - last activity")
+            }
+            
+            # Remove Nones so Pydantic defaults or feature engineering kicks in
+            mapped = {k: v for k, v in mapped.items() if v is not None}
+            
+            try:
+                result = _score_and_store_customer(mapped)
+                batch_customers_for_email.append(result)
+                imported += 1
+            except Exception as e:
+                errors.append(f"Row {idx + 1} error: {e}")
+                
+        if batch_customers_for_email:
+            def _coordinated_bulk_delivery(targets=batch_customers_for_email):
+                import time
+                from services.store import update_customer_in_store
+                for idx, item in enumerate(targets):
+                    if idx > 0:
+                        time.sleep(2.5)
+                    try:
+                        pers_msg = item.get("llm_analysis", {}).get("english", {}).get("email_strategy", "")
+                        email_res = send_retention_email(
+                            customer_id=item["customer_id"],
+                            risk_pct=item["risk_percentage"],
+                            personalized_message=pers_msg
+                        )
+                        if email_res["status"] == "SENT":
+                            item["sent_email"] = {
+                                "subject": email_res.get("subject", ""),
+                                "html_body": email_res.get("html_body", ""),
+                                "timestamp": email_res.get("updated_at", "")
+                            }
+                            update_customer_in_store(item)
+                    except Exception as ex:
+                        logger.warning("Batch email failed for %s: %s", item["customer_id"], ex)
+            background_tasks.add_task(_coordinated_bulk_delivery)
+
+        return {
+            "imported": imported,
+            "errors": errors,
+            "customers_scored": imported,
+            "results": batch_customers_for_email,
+        }
+    except Exception as e:
+        logger.error(f"Upload processing failed: {e}")
+        return JSONResponse(status_code=400, content={"error": str(e)})
 
 @router.post("/customers/upload-csv")
 async def upload_csv_customers(
@@ -333,15 +437,25 @@ async def upload_csv_customers(
 
         def _coordinated_bulk_delivery(targets=batch_customers_for_email):
             import time
+            from services.store import update_customer_in_store
 
             for idx, item in enumerate(targets):
                 if idx > 0:
                     time.sleep(2.5)
                 try:
-                    send_retention_email(
+                    pers_msg = item.get("llm_analysis", {}).get("english", {}).get("email_strategy", "")
+                    email_res = send_retention_email(
                         customer_id=item["customer_id"],
                         risk_pct=item["risk_percentage"],
+                        personalized_message=pers_msg
                     )
+                    if email_res["status"] == "SENT":
+                        item["sent_email"] = {
+                            "subject": email_res.get("subject", ""),
+                            "html_body": email_res.get("html_body", ""),
+                            "timestamp": email_res.get("updated_at", "")
+                        }
+                        update_customer_in_store(item)
                 except Exception as ex:
                     logger.warning(
                         "Batch email failed for %s: %s", item["customer_id"], ex
@@ -517,3 +631,87 @@ async def get_llm_analysis(customer_id: str):
     if not customer:
         raise HTTPException(status_code=404, detail="Customer analysis not found")
     return customer["llm_analysis"]
+
+
+@router.post("/customers/{customer_id}/draft-email")
+async def draft_customer_email(customer_id: str):
+    customer = CUSTOMERS_BY_ID.get(customer_id) or RECENT_ANALYSES.get(customer_id)
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    # Extract the email strategy from the LLM analysis
+    llm = customer.get("llm_analysis", {})
+    english_email = llm.get("english", {}).get("email_strategy", "Draft not available.")
+    arabic_email = llm.get("arabic", {}).get("email_strategy", "المسودة غير متوفرة.")
+    
+    why_generated = llm.get("english", {}).get("why_generated", "Routine check-in")
+    factors = llm.get("english", {}).get("personalization_factors", "Usage metrics")
+    outcome = llm.get("english", {}).get("expected_outcome", "Improved engagement")
+    
+    # Simulate logging the event to the timeline
+    if "timeline" not in customer:
+        customer["timeline"] = []
+        
+    from datetime import datetime, timezone
+    customer["timeline"].append({
+        "type": "email_drafted",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "detail": "AI drafted personalized communication strategy."
+    })
+    
+    return {
+        "email_english": english_email,
+        "email_arabic": arabic_email,
+        "why_generated": why_generated,
+        "personalization_factors": factors,
+        "expected_outcome": outcome
+    }
+
+from fastapi.responses import FileResponse
+import os
+
+@router.get("/customers/template")
+async def download_template():
+    template_path = "backend/assets/template.xlsx"
+    if not os.path.exists(template_path):
+        raise HTTPException(status_code=404, detail="Template not found")
+    return FileResponse(template_path, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename="AI_Retention_Engine_Template.xlsx")
+
+@router.get("/customers/export")
+async def export_customers():
+    # Convert CUSTOMERS dict list to DataFrame
+    if not CUSTOMERS:
+        raise HTTPException(status_code=400, detail="No customers to export")
+    
+    df = pd.DataFrame(CUSTOMERS)
+    
+    # We create a simple DataFrame mapping original keys to something presentable.
+    export_df = pd.DataFrame()
+    export_df["User ID"] = df.get("customer_id", df.get("user_id", ""))
+    export_df["Name"] = df.get("name", "")
+    export_df["Email"] = df.get("email", "")
+    export_df["Industry"] = df.get("industry", "")
+    export_df["Contract"] = df.get("contract", "")
+    export_df["Segment"] = df.get("segment", "")
+    export_df["Avg Plan Price"] = df.get("avg_plan_price", 0)
+    export_df["Total Paid"] = df.get("total_amount_paid", 0)
+    export_df["Transactions"] = df.get("total_transactions", 0)
+    export_df["Tenure (Days)"] = df.get("billing_tenure_days", 0)
+    export_df["First Purchase"] = df.get("first_purchase", "")
+    export_df["Last Activity"] = df.get("last_activity", "")
+    export_df["Auto Renewals"] = df.get("auto_renew_count", 0)
+    export_df["Cancellations"] = df.get("total_cancellations", 0)
+    export_df["Payment Failures"] = df.get("payment_failures", 0)
+    export_df["Support Tickets"] = df.get("support_tickets", 0)
+    export_df["NPS Score"] = df.get("nps_score", 0)
+    export_df["Feature Usage %"] = df.get("feature_usage_pct", 0)
+    export_df["Emails Sent"] = df.get("emails_sent", 0)
+    export_df["Emails Opened"] = df.get("emails_opened", 0)
+    export_df["Risk Score"] = df.get("risk", 0)
+    export_df["Health Score"] = df.get("health_score", 0)
+    
+    export_path = "backend/assets/export.xlsx"
+    os.makedirs("backend/assets", exist_ok=True)
+    export_df.to_excel(export_path, index=False)
+    
+    return FileResponse(export_path, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename="Customer_Export.xlsx")

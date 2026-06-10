@@ -168,14 +168,30 @@ def build_structured_llm_analysis(customer: dict[str, Any]) -> dict[str, Any]:
     llama_report = {
         "source": "groq_llama",
         "english": {
-            "churn_risk_summary": f"The account is at a {risk:.1f}% risk of churn.",
-            "behavioral_diagnosis": "Customer shows signs of disengagement.",
-            "recommended_rescue_strategy": strategy,
+            "customer_persona": "Standard Persona",
+            "customer_segment": "Standard Segment",
+            "retention_strategy": strategy,
+            "communication_strategy": "Email Outreach",
+            "email_strategy": f"Subject: Account Review\n\nHi {customer.get('name', 'Customer')},\n\nWe noticed some changes in your usage...",
+            "why_generated": f"System detected declining commitment patterns requiring immediate intervention. Confidence: {confidence}%.",
+            "personalization_factors": "Health score, NPS history, and recent cancellation frequency.",
+            "expected_outcome": f"Protects ${revenue:,.0f} in ARR by re-engaging the decision maker.",
+            "recommended_actions": actions,
+            "follow_up_plan": next_best_action,
+            "executive_summary": f"The account is at a {risk:.1f}% risk of churn. Immediate action required.",
         },
         "arabic": {
-            "churn_risk_summary": f"الحساب معرض لخطر الإلغاء بنسبة {risk:.1f}%.",
-            "behavioral_diagnosis": "يظهر العميل علامات على ضعف التفاعل.",
-            "recommended_rescue_strategy": strategy_ar,
+            "customer_persona": "الشخصية القياسية",
+            "customer_segment": "الشريحة القياسية",
+            "retention_strategy": strategy_ar,
+            "communication_strategy": "التواصل عبر البريد الإلكتروني",
+            "email_strategy": f"الموضوع: مراجعة الحساب\n\nمرحباً {customer.get('name', 'عميلنا العزيز')},\n\nلاحظنا بعض التغييرات...",
+            "why_generated": f"اكتشف النظام أنماط التزام متراجعة تتطلب تدخلاً فورياً. الثقة: {confidence}%.",
+            "personalization_factors": "درجة الصحة، تاريخ NPS، وتواتر الإلغاءات الأخيرة.",
+            "expected_outcome": f"حماية مبلغ ${revenue:,.0f} من الإيرادات السنوية عبر إعادة تفاعل صانع القرار.",
+            "recommended_actions": actions_ar,
+            "follow_up_plan": next_best_action_ar,
+            "executive_summary": f"الحساب معرض لخطر الإلغاء بنسبة {risk:.1f}%. يتطلب تدخلاً فورياً.",
         },
     }
 
@@ -214,9 +230,12 @@ def build_structured_llm_analysis(customer: dict[str, Any]) -> dict[str, Any]:
 
 
 def call_llama_api(
-    user_id: str, risk_pct: float, top_drivers_text: str, is_vip: bool, revenue: float
+    user_id: str, risk_pct: float, top_drivers_text: str, is_vip: bool, revenue: float, customer_data: dict[str, Any] = None
 ) -> dict[str, Any]:
     """Call Groq LLaMA API for bilingual structured retention analysis."""
+    if customer_data is None:
+        customer_data = {}
+
     if not LLAMA_API_KEY:
         return _llama_fallback(user_id, risk_pct, is_vip)
 
@@ -226,40 +245,16 @@ def call_llama_api(
         else "HIGH" if risk_pct >= 64 else "MEDIUM" if risk_pct >= 40 else "LOW"
     )
 
-    prompt = f"""You are an elite AI Customer Retention Strategist.
-
-CUSTOMER PROFILE:
-- Customer ID: {user_id}
-- Predicted Churn Risk: {risk_pct:.1f}%
-- Risk Level: {risk_level}
-- VIP Status: {"YES" if is_vip else "NO"}
-- Revenue Exposure: ${revenue:,.0f}
-
-SHAP ROOT-CAUSE ANALYSIS (ML model identified these as strongest churn drivers):
-{top_drivers_text}
-
-Generate a clear, high-impact business strategy report for the account management team.
-
-STRICT OUTPUT FORMAT - Return ONLY valid JSON with this exact structure:
-{{
-  "english": {{
-    "executive_summary": "1-2 sentence high-level business summary of the risk and urgency.",
-    "key_drivers": "2-3 clear business reasons driving the churn risk.",
-    "revenue_impact": "Financial risk framing based on the customer's value.",
-    "action_plan": "Step-by-step strategic recommendation for the account manager.",
-    "agent_script": "An empathetic opening sentence for a phone call or email."
-  }},
-  "arabic": {{
-    "executive_summary": "Arabic version",
-    "key_drivers": "Arabic version",
-    "revenue_impact": "Arabic version",
-    "action_plan": "Arabic version",
-    "agent_script": "Arabic version"
-  }}
-}}
-
-The Arabic must sound natural and professional, not machine translated.
-Return ONLY the JSON object, no markdown, no explanation."""
+    from services.prompt_builder import PromptBuilder
+    messages = PromptBuilder.build_final_prompt(
+        customer_id=user_id,
+        customer_data=customer_data,
+        risk_pct=risk_pct,
+        risk_level=risk_level,
+        is_vip=is_vip,
+        revenue=revenue,
+        top_drivers_text=top_drivers_text
+    )
 
     headers = {
         "Content-Type": "application/json",
@@ -267,13 +262,7 @@ Return ONLY the JSON object, no markdown, no explanation."""
     }
     data = {
         "model": LLAMA_MODEL_NAME,
-        "messages": [
-            {
-                "role": "system",
-                "content": "You are a concise Customer Success strategist. You return ONLY valid JSON.",
-            },
-            {"role": "user", "content": prompt},
-        ],
+        "messages": messages,
         "temperature": 0.4,
     }
 
@@ -308,17 +297,23 @@ def _llama_fallback(user_id: str, risk_pct: float, is_vip: bool) -> dict[str, An
     return {
         "source": "local_fallback",
         "english": {
-            "executive_summary": f"Customer {user_id} is at {risk_pct:.1f}% churn risk, classified as {risk_level} priority.",
-            "key_drivers": "Behavioral signals and engagement metrics suggest disengagement patterns.",
-            "revenue_impact": "Revenue at risk warrants measured save motion.",
-            "action_plan": "Escalate to retention specialist with personalized offer.",
-            "agent_script": "We noticed some signals and want to help before you make any decisions.",
+            "customer_persona": "Standard Enterprise User",
+            "customer_segment": "At-Risk Segment",
+            "retention_strategy": "Escalate to retention specialist with personalized offer.",
+            "communication_strategy": "Email outreach followed by a phone call.",
+            "email_strategy": "Subject: Checking in on your account...\nHi,\nWe noticed some signals and want to help before you make any decisions.",
+            "recommended_actions": ["Send standard email", "Flag in CRM", "Assign agent"],
+            "follow_up_plan": "Check engagement within 48 hours.",
+            "executive_summary": f"Customer {user_id} is at {risk_pct:.1f}% churn risk, classified as {risk_level} priority."
         },
         "arabic": {
-            "executive_summary": f"العميل {user_id} معرض لخطر إلغاء بنسبة {risk_pct:.1f}%، مصنف كأولوية {risk_level}.",
-            "key_drivers": "تشير الإشارات السلوكية ومقاييس التفاعل إلى أنماط تراجع واضحة.",
-            "revenue_impact": "الإيرادات المعرضة للخطر تبرر اتخاذ إجراء إنقاذ مدروس.",
-            "action_plan": "تصعيد إلى مختص احتفاظ مع عرض مخصص لإنقاذ العميل.",
-            "agent_script": "لقد لاحظنا بعض المؤشرات ونود مساعدتك لضمان حصولك على أفضل تجربة.",
+            "customer_persona": "مستخدم مؤسسي قياسي",
+            "customer_segment": "شريحة معرضة للخطر",
+            "retention_strategy": "تصعيد إلى مختص احتفاظ مع عرض مخصص لإنقاذ العميل.",
+            "communication_strategy": "التواصل عبر البريد الإلكتروني يتبعه مكالمة هاتفية.",
+            "email_strategy": "الموضوع: الاطمئنان على حسابك...\nمرحباً،\nلقد لاحظنا بعض المؤشرات ونود مساعدتك لضمان حصولك على أفضل تجربة.",
+            "recommended_actions": ["إرسال بريد قياسي", "تحديد في نظام إدارة العملاء", "تعيين وكيل"],
+            "follow_up_plan": "التحقق من التفاعل خلال 48 ساعة.",
+            "executive_summary": f"العميل {user_id} معرض لخطر إلغاء بنسبة {risk_pct:.1f}%، مصنف كأولوية {risk_level}."
         },
     }

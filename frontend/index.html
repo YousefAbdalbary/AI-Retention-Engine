@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=3" />
+  <link rel="stylesheet" href="styles.css?v=7" />
 </head>
 <body>
   <div class="app-shell">
@@ -43,6 +43,7 @@
           <h1>لوحة التحكم للمبيعات وتجديد الاشتراكات</h1>
         </div>
         <div class="topbar-actions">
+          <button class="icon-button" onclick="downloadTemplate()" type="button" aria-label="تحميل القالب"><i data-lucide="file-spreadsheet"></i></button>
           <button class="icon-button" id="overviewPdfBtn" type="button" aria-label="حفظ نظرة عامة كملف PDF"><i data-lucide="file-down"></i></button>
           <button class="icon-button" id="refreshBtn" type="button" aria-label="تحديث اللوحة"><i data-lucide="refresh-cw"></i></button>
           <button class="icon-button" id="themeToggle" type="button" aria-label="تبديل المظهر"><i data-lucide="sun-moon"></i></button>
@@ -97,6 +98,36 @@
           <section class="panel chart-panel">
             <div class="panel-header">
               <div>
+                <h2>توزيع صحة العملاء</h2>
+                <p>مؤشر الرضا والتفاعل (الاستخدام والدعم) من 0 إلى 100.</p>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="healthChart"></canvas></div>
+          </section>
+
+          <section class="panel chart-panel">
+            <div class="panel-header">
+              <div>
+                <h2>توزيع القطاعات</h2>
+                <p>نظرة عامة على تقسيم العملاء.</p>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="segmentChart"></canvas></div>
+          </section>
+
+          <section class="panel chart-panel col-span-2">
+            <div class="panel-header">
+              <div>
+                <h2>تبني الميزات مقابل NPS</h2>
+                <p>مصفوفة فرص الاحتفاظ بالعملاء (حجم الفقاعة = الإيرادات).</p>
+              </div>
+            </div>
+            <div class="chart-wrap" style="height: 300px;"><canvas id="scatterChart"></canvas></div>
+          </section>
+
+          <section class="panel chart-panel">
+            <div class="panel-header">
+              <div>
                 <h2>توزيع إجراءات الذكاء الاصطناعي</h2>
                 <p>المزيج التشغيلي لقرارات الاحتفاظ.</p>
               </div>
@@ -129,11 +160,17 @@
       <section class="view" id="customersView">
         <section class="panel table-panel">
           <div class="panel-header table-tools">
-            <div>
-              <h2>تحليلات جميع العملاء</h2>
-              <p>ابحث، صفِّ، رتب، افحص، واحذف العملاء الذين قمت بتحليلهم أو رفعهم.</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 16px;">
+              <div>
+                <h2>تحليلات جميع العملاء</h2>
+                <p>ابحث، صفِّ، رتب، افحص، واحذف العملاء الذين قمت بتحليلهم أو رفعهم.</p>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="primary-button" onclick="exportData()" type="button" style="padding: 8px 16px;"><i data-lucide="download"></i><span>تصدير البيانات</span></button>
+                <button class="small-button text" onclick="downloadTemplate()" type="button" style="padding: 8px 16px; border: 1px solid var(--line); border-radius: 6px;"><i data-lucide="file-spreadsheet"></i><span>تحميل القالب</span></button>
+              </div>
             </div>
-            <div class="filters-container" style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+            <div class="filters-container" style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
               <div class="filters">
                 <label class="search-box">
                   <i data-lucide="search"></i>
@@ -203,7 +240,7 @@
               <thead>
                 <tr>
                   <th data-sort="customer_id">معرف العميل</th>
-                  <th data-sort="risk">صحة الحساب %</th>
+                  <th data-sort="risk">الرضا والتفاعل %</th>
                   <th>VIP</th>
                   <th data-sort="revenue">الإيرادات</th>
                   <th>التواصل الأول</th>
@@ -229,12 +266,16 @@
           </div>
         </section>
 
-        <div class="panel-grid compact">
+        <div class="panel-grid" style="grid-template-columns: 1fr 1fr;">
           <section class="panel chart-panel">
             <div class="panel-header"><div><h2>شرائح العملاء</h2><p>العدد ومتوسط المخاطر حسب الشريحة.</p></div></div>
             <div class="chart-wrap"><canvas id="segmentChart"></canvas></div>
           </section>
-          <section class="panel">
+          <section class="panel chart-panel">
+            <div class="panel-header"><div><h2>نسبة عملاء VIP</h2><p>الحسابات الاستراتيجية مقابل الحسابات العادية.</p></div></div>
+            <div class="chart-wrap"><canvas id="vipChart"></canvas></div>
+          </section>
+          <section class="panel" style="grid-column: span 2;">
             <div class="panel-header"><div><h2>خريطة حرارية للمخاطر</h2><p>تركيز المخاطر على مستوى الشرائح.</p></div></div>
             <div class="heatmap" id="riskHeatmap"></div>
           </section>
@@ -297,15 +338,15 @@
               <div id="tab-ready" class="csv-tab-content active">
                 <label class="upload-dropzone file-drop" id="dropzone-ready">
                   <i data-lucide="upload-cloud"></i>
-                  <span>↑ أسقط ملف CSV منسق أو انقر للتصفح</span>
-                  <input type="file" accept=".csv" onchange="handleCsvFile(event, 'ready')">
+                  <span>↑ أسقط ملف CSV / XLSX منسق أو انقر للتصفح</span>
+                  <input type="file" accept=".csv, .xlsx, .xls" onchange="handleCsvFile(event, 'ready')">
                 </label>
                 <p class="csv-columns-hint form-note" style="margin-top: 8px;">
                   مطلوب: <code>user_id · avg_plan_price · total_amount_paid · total_transactions · billing_tenure_days · auto_renew_count · total_cancellations</code>
                   <br><small>يتم حساب معدل الإلغاء تلقائياً</small>
                 </p>
                 <div class="csv-actions" style="display: flex; gap: 10px; margin-top: 12px;">
-                  <button class="small-button text" onclick="downloadTemplate('ready')" type="button">↓ تحميل القالب</button>
+                  <button class="small-button text" onclick="downloadTemplate()" type="button">↓ تحميل القالب</button>
                   <button class="primary-button" onclick="uploadCsv('ready')" type="button" style="flex: 1;">رفع وتقييم ←</button>
                 </div>
               </div>
@@ -314,8 +355,8 @@
               <div id="tab-raw" class="csv-tab-content" style="display:none">
                 <label class="upload-dropzone file-drop" id="dropzone-raw">
                   <i data-lucide="file-spreadsheet"></i>
-                  <span>↑ أسقط سجل العمليات الخام أو انقر للتصفح</span>
-                  <input type="file" accept=".csv" onchange="handleCsvFile(event, 'raw')">
+                  <span>↑ أسقط سجل العمليات الخام (CSV/XLSX) أو انقر للتصفح</span>
+                  <input type="file" accept=".csv, .xlsx, .xls" onchange="handleCsvFile(event, 'raw')">
                 </label>
                 <p class="csv-columns-hint form-note" style="margin-top: 8px;">
                   مطلوب: <code>customer_id · transaction_date · amount · plan_name</code><br>
@@ -323,7 +364,7 @@
                   <small>كل صف = عملية واحدة. يتم هندسة الميزات تلقائياً لكل عميل.</small>
                 </p>
                 <div class="csv-actions" style="display: flex; gap: 10px; margin-top: 12px;">
-                  <button class="small-button text" onclick="downloadTemplate('raw')" type="button">↓ تحميل القالب</button>
+                  <button class="small-button text" onclick="downloadTemplate()" type="button">↓ تحميل القالب</button>
                   <button class="primary-button" onclick="uploadCsv('raw')" type="button" style="flex: 1;">رفع وتقييم ←</button>
                 </div>
               </div>
@@ -351,33 +392,100 @@
             <div class="panel-header"><div><h2>سجل النشاط</h2><p>تدخلات الذكاء الاصطناعي وأحداث النموذج.</p></div></div>
             <div class="activity-feed" id="activityFeed"></div>
           </section>
-          <section class="panel">
-            <div class="panel-header"><div><h2>VIP مقابل عاديين</h2><p>تكوين المحفظة.</p></div></div>
-            <div class="chart-wrap"><canvas id="vipChart"></canvas></div>
-          </section>
+        </div>
+      </section>
+      <section class="view" id="profileView">
+        <header class="profile-header">
+          <button class="small-button text" onclick="setView('customers')" style="margin-bottom: 12px;"><i data-lucide="arrow-right"></i><span>العودة للعملاء</span></button>
+          <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+            <div>
+              <p class="eyebrow" id="profileEyebrow">مساحة عمل العميل</p>
+              <h2 id="profileTitle">جاري التحميل...</h2>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="primary-button" onclick="document.getElementById('emailWorkspace').scrollIntoView({behavior: 'smooth'})"><i data-lucide="mail"></i><span>إرسال بريد ذكي</span></button>
+            </div>
+          </div>
+        </header>
+        
+        <!-- AI Customer Snapshot -->
+        <div class="kpi-grid" id="profileSnapshot" style="margin-bottom: 24px;">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="profile-grid">
+          <!-- Main Content (Left) -->
+          <div class="profile-main">
+            <!-- AI Command Center -->
+            <section class="panel command-center-panel" id="aiCommandCenter">
+              <!-- Populated by JS -->
+            </section>
+
+            <!-- Detailed AI Strategy -->
+            <section class="panel" id="aiStrategyPanel">
+              <div class="panel-header"><div><h2>استراتيجية الاحتفاظ</h2><p>تحليل الذكاء الاصطناعي وتوصيات قابلة للتنفيذ.</p></div></div>
+              <div id="aiStrategyContent"></div>
+            </section>
+
+            <!-- Action Timeline -->
+            <section class="panel" id="actionTimelinePanel">
+              <div class="panel-header"><div><h2>الجدول الزمني للإجراءات</h2><p>خطة تنفيذ خطوة بخطوة للعميل المهدد بالإلغاء.</p></div></div>
+              <div id="actionTimelineContent"></div>
+            </section>
+
+            <!-- NBA Ranking -->
+            <section class="panel" id="nbaPanel">
+              <div class="panel-header"><div><h2>تصنيف الإجراء الأفضل (NBA)</h2><p>توليد المرشحين وتقييم التوصية النهائية.</p></div></div>
+              <div id="nbaContent"></div>
+            </section>
+
+            <!-- Feature Effects (SHAP) -->
+            <section class="panel" id="featureEffectsPanel">
+              <div class="panel-header"><div><h2>عوامل الخطر والاستقرار</h2><p>العوامل الرئيسية المؤثرة على قرار العميل بالبقاء أو المغادرة.</p></div></div>
+              <div id="featureEffectsContent"></div>
+            </section>
+
+
+            <!-- Email Workspace -->
+            <section class="panel email-workspace-panel" id="emailWorkspace">
+              <div class="panel-header"><div><h2>مساحة البريد الإلكتروني الذكي</h2><p>مراجعة وتعديل وإرسال البريد المخصص.</p></div><button class="small-button" onclick="draftEmail()"><i data-lucide="refresh-cw"></i><span>توليد مسودة</span></button></div>
+              <div id="emailContext" style="background: rgba(148, 163, 184, 0.05); padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 14px; border: 1px solid var(--line);">
+                <p><strong>لماذا تم التوليد؟:</strong> <span id="emailWhy">جاري التحميل...</span></p>
+                <p><strong>عوامل التخصيص:</strong> <span id="emailFactors">جاري التحميل...</span></p>
+                <p><strong>النتيجة المتوقعة:</strong> <span id="emailOutcome">جاري التحميل...</span></p>
+              </div>
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label>الموضوع</label>
+                <input type="text" id="emailSubject" class="form-input" />
+              </div>
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label>نص البريد</label>
+                <textarea id="emailBody" class="form-input" style="min-height: 150px; font-family: 'Inter', sans-serif;" dir="auto"></textarea>
+              </div>
+              <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                <button class="primary-button"><i data-lucide="send"></i><span>إرسال البريد</span></button>
+              </div>
+            </section>
+          </div>
+
+          <!-- Sidebar (Right) -->
+          <div class="profile-sidebar">
+            <section class="panel timeline-panel">
+              <div class="panel-header"><div><h2>سجل العميل</h2><p>أحداث الحساب وتدخلات الذكاء الاصطناعي.</p></div></div>
+              <div class="timeline" id="profileTimeline">
+                <!-- Populated by JS -->
+              </div>
+            </section>
+          </div>
         </div>
       </section>
     </main>
   </div>
 
-  <aside class="drawer" id="customerDrawer" aria-hidden="true">
-    <div class="drawer-backdrop" id="drawerBackdrop"></div>
-    <section class="drawer-panel">
-      <div class="drawer-header">
-        <div>
-          <p class="eyebrow">تفاصيل العميل</p>
-          <h2 id="drawerTitle">عميل</h2>
-        </div>
-        <button class="icon-button" id="closeDrawer" type="button" aria-label="إغلاق اللوحة"><i data-lucide="x"></i></button>
-      </div>
-      <div id="drawerContent" class="drawer-content"></div>
-    </section>
-  </aside>
-
   <div class="toast-stack" id="toastStack"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=9"></script>
 </body>
 </html>

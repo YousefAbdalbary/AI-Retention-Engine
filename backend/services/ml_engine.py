@@ -20,6 +20,7 @@ from services.store import update_customer_in_store
 
 try:
     import shap
+
     SHAP_AVAILABLE = True
 except ImportError:
     SHAP_AVAILABLE = False
@@ -54,6 +55,7 @@ def load_model() -> xgb.XGBClassifier | None:
                 setattr(loaded_model, "_estimator_type", "classifier")
 
         import numpy as np
+
         if not hasattr(loaded_model, "n_classes_"):
             setattr(loaded_model, "n_classes_", 2)
         if not hasattr(loaded_model, "classes_"):
@@ -64,6 +66,7 @@ def load_model() -> xgb.XGBClassifier | None:
     except Exception as exc:
         logger.warning("Model load failed (will use fallback scoring): %s", exc)
         return None
+
 
 # Global model instance
 model = load_model()
@@ -97,16 +100,31 @@ def build_feature_frame(customer: CustomerData) -> pd.DataFrame:
 def customer_from_prediction(
     customer: CustomerData, risk_percentage: float
 ) -> dict[str, Any]:
+    from services.segmentation import segment_customer
+    from services.health_engine import calculate_health_score
+    from services.revenue_intelligence import compute_revenue_intelligence
+
     payload = model_payload(customer)
     is_vip = customer.avg_plan_price > VIP_PLAN_PRICE
     priority = priority_from_score(risk_percentage, is_vip)
+
+    # Compute new AI features
+    health_score, health_trend = calculate_health_score(customer, risk_percentage)
+    segment_assignment = segment_customer(customer, risk_percentage)
+    revenue_intel = compute_revenue_intelligence(
+        customer, risk_percentage, health_score
+    )
+
     result = {
         "customer_id": customer.user_id,
         "risk": risk_percentage,
         "risk_percentage": risk_percentage,
+        "health_score": health_score,
+        "health_trend": health_trend,
+        "segment": segment_assignment,
         "is_vip": is_vip,
         "vip_status": "VIP" if is_vip else "Standard",
-        "revenue": round(customer.total_amount_paid, 2),
+        "revenue": round(customer.total_amount_paid or 0.0, 2),
         "tenure": customer.billing_tenure_days,
         "billing_tenure_days": customer.billing_tenure_days,
         "cancel_rate": customer.cancel_rate,
@@ -121,19 +139,24 @@ def customer_from_prediction(
             clamp(
                 risk_percentage * 0.76
                 + (14 if is_vip else 0)
-                + customer.cancel_rate * 12,
+                + (customer.cancel_rate or 0) * 12,
                 0,
                 100,
             ),
             0,
         ),
         "last_activity": now_iso(),
-        "segment": "Enterprise VIP" if is_vip else "Scored Account",
         "avg_plan_price": payload["avg_plan_price"],
-        "total_amount_paid": payload["total_amount_paid"],
+        "total_amount_paid": payload.get("total_amount_paid", 0),
         "total_transactions": payload["total_transactions"],
-        "total_cancellations": payload["total_cancellations"],
+        "total_cancellations": payload.get("total_cancellations", 0),
         "auto_renew_count": payload["auto_renew_count"],
+        "nps_score": customer.nps_score,
+        "feature_usage_pct": customer.feature_usage_pct,
+        "email_open_rate": customer.email_open_rate,
+        "support_tickets": customer.support_tickets,
+        "industry": customer.industry,
+        "revenue_intel": revenue_intel,
         "monthly_risk": [
             {
                 "month": month,
@@ -193,10 +216,11 @@ def build_customer_record(
 
 
 def _score_and_store_customer(raw: dict) -> dict:
+    from services.feature_engineering import engineer_features
+
     METADATA_KEYS = {
         "_connector_source",
         "_synced_at",
-        "email",
         "company",
         "lifecycle_stage",
         "account_name",
@@ -211,11 +235,12 @@ def _score_and_store_customer(raw: dict) -> dict:
     }
     clean = {k: v for k, v in raw.items() if k not in METADATA_KEYS}
 
-    tc = int(clean.get("total_cancellations", 0))
-    tt = max(1, int(clean.get("total_transactions", 1)))
-    clean["cancel_rate"] = round(tc / tt, 4)
-
+    # Pass to schema
     data = CustomerData(**clean)
+
+    # Feature Engineering
+    data = engineer_features(data)
+
     features = build_feature_frame(data)
     risk_pct, priority, decision, is_vip = run_prediction(features, data)
     customer = build_customer_record(data, risk_pct, priority, decision, is_vip)
@@ -248,6 +273,7 @@ FEATURE_TRANSLATIONS_AR = {
     "billing_tenure_days": "فترة الاشتراك (بالأيام)",
     "cancel_rate": "معدل الإلغاء",
 }
+
 
 def get_shap_explainer():
     """Lazy singleton for SHAP TreeExplainer."""
