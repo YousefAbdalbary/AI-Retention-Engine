@@ -629,7 +629,7 @@ function renderInsights(analysis, meta = {}) {
 }
 
 function readPredictionPayload() {
-  return {
+  const payload = {
     user_id: ($("user_id")?.value || "").trim(),
     avg_plan_price: Number($("avg_plan_price")?.value || 0),
     total_amount_paid: Number($("total_amount_paid")?.value || 0),
@@ -638,6 +638,11 @@ function readPredictionPayload() {
     auto_renew_count: Number($("auto_renew_count")?.value || 0),
     total_cancellations: Number($("total_cancellations")?.value || 0),
   };
+  const testEmail = ($("test_email")?.value || "").trim();
+  if (testEmail) {
+    payload.email = testEmail;
+  }
+  return payload;
 }
 
 async function analyzeCustomer(event) {
