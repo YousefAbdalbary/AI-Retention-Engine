@@ -105,11 +105,15 @@ def send_retention_email(
 
     risk_level = _classify_risk(risk_pct)
     # Dynamically read from env at runtime to ensure dotenv loaded variables are captured
-    receiver = receiver_email or os.getenv("RECEIVER_EMAIL", "").strip()
-    if not receiver:
+    if receiver_email and receiver_email.strip().lower() != "unknown":
+        receiver = receiver_email.strip()
+    else:
+        receiver = os.getenv("RECEIVER_EMAIL", "").strip()
+        
+    if not receiver or receiver.lower() == "unknown":
         raise ValueError(
-            "Receiver email address is empty. Please set RECEIVER_EMAIL in your .env file "
-            "or pass receiver_email explicitly."
+            "Receiver email address is empty or invalid ('Unknown'). Please set RECEIVER_EMAIL in your .env file "
+            "or pass a valid receiver_email explicitly."
         )
     email_type_name = _EMAIL_TYPE_NAMES.get(risk_level, "Retention Email")
 

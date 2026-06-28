@@ -1272,19 +1272,30 @@ function bindEvents() {
     const row = event.target.closest("tr[data-customer-id]");
     if (row) openCustomer(row.dataset.customerId);
   });
-  $("drawerContent").addEventListener("click", (event) => {
-    const printButton = event.target.closest("[data-print-customer]");
-    if (printButton) {
-      saveCustomerPdf(printButton.dataset.printCustomer).catch((error) => toast(error.message));
-      return;
-    }
-    const deleteButton = event.target.closest("[data-delete-customer]");
-    if (deleteButton) {
-      deleteCustomer(deleteButton.dataset.deleteCustomer).catch((error) => toast(error.message));
-    }
-  });
-  $("closeDrawer").addEventListener("click", closeDrawer);
-  $("drawerBackdrop").addEventListener("click", closeDrawer);
+  const drawerContent = $("drawerContent");
+  if (drawerContent) {
+    drawerContent.addEventListener("click", (event) => {
+      const printButton = event.target.closest("[data-print-customer]");
+      if (printButton) {
+        saveCustomerPdf(printButton.dataset.printCustomer).catch((error) => toast(error.message));
+        return;
+      }
+      const deleteButton = event.target.closest("[data-delete-customer]");
+      if (deleteButton) {
+        deleteCustomer(deleteButton.dataset.deleteCustomer).catch((error) => toast(error.message));
+      }
+    });
+  }
+
+  const closeDrawerBtn = $("closeDrawer");
+  if (closeDrawerBtn) {
+    closeDrawerBtn.addEventListener("click", closeDrawer);
+  }
+
+  const drawerBackdrop = $("drawerBackdrop");
+  if (drawerBackdrop) {
+    drawerBackdrop.addEventListener("click", closeDrawer);
+  }
 }
 
 // ============================================================================

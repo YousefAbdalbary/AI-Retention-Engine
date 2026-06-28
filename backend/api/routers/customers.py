@@ -116,12 +116,12 @@ async def upload_file_customers(
                 errors.append(f"Row {idx + 1} error: {e}")
                 
         if batch_customers_for_email:
-            def _coordinated_bulk_delivery(targets=batch_customers_for_email):
-                import time
+            async def _coordinated_bulk_delivery(targets=batch_customers_for_email):
+                import asyncio
                 from services.store import update_customer_in_store
                 for idx, item in enumerate(targets):
                     if idx > 0:
-                        time.sleep(2.5)
+                        await asyncio.sleep(2.5)
                     try:
                         pers_msg = item.get("llm_analysis", {}).get("english", {}).get("email_strategy", "")
                         email_res = send_retention_email(
@@ -457,13 +457,13 @@ async def upload_csv_customers(
 
     if batch_customers_for_email:
 
-        def _coordinated_bulk_delivery(targets=batch_customers_for_email):
-            import time
+        async def _coordinated_bulk_delivery(targets=batch_customers_for_email):
+            import asyncio
             from services.store import update_customer_in_store
 
             for idx, item in enumerate(targets):
                 if idx > 0:
-                    time.sleep(2.5)
+                    await asyncio.sleep(2.5)
                 try:
                     pers_msg = item.get("llm_analysis", {}).get("english", {}).get("email_strategy", "")
                     email_res = send_retention_email(

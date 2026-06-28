@@ -41,6 +41,32 @@ app.include_router(
 )
 app.include_router(health.router, prefix="/api/v1", tags=["System Health"])
 
+import asyncio
+
+
+async def background_init():
+    logger.info("Starting background initialization...")
+    from services.store import (
+        async_load_customers_from_store,
+        CUSTOMERS,
+        CUSTOMERS_BY_ID,
+    )
+
+    loaded_data = await async_load_customers_from_store()
+
+    # Populate the global store
+    CUSTOMERS.extend(loaded_data)
+    for c in CUSTOMERS:
+        CUSTOMERS_BY_ID[c["customer_id"]] = c
+
+    logger.info("Background initialization complete. Store is ready.")
+
+
+# Startup Event
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(background_init())
+
 
 # Static Mount
 if FRONTEND_DIR.exists():
